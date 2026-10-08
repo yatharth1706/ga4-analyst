@@ -11,7 +11,6 @@ from google.api_core.exceptions import GoogleAPICallError
 from google.cloud import bigquery
 from google.oauth2 import service_account
 
-from app.bigquery.guard import QueryRejected, check_dry_run
 from app.config import Settings
 
 LOCATION = "US"
@@ -44,16 +43,14 @@ class QueryResult:
 
 
 class BigQueryRunner:
-    def __init__(self, settings: Settings):
-        self._client = bigquery.Client(
-            project=settings.gcp_project, location=LOCATION, credentials=_credentials(settings)
-        )
+    def __init__(self, client: bigquery.Client):
+        self._client = client
 
     def run(self, sql: str) -> QueryResult:
         started = time.monotonic()
         try:
             dry_run = self._client.query(sql, job_config=bigquery.QueryJobConfig(dry_run=True))
-            check_dry_run(dry_run.statement_type, dry_run.total_bytes_processed, MAX_BYTES_BILLED)
+            _check_dry_run(dry_run)
             job = self._client.query(
                 sql,
                 job_config=bigquery.QueryJobConfig(
@@ -63,8 +60,6 @@ class BigQueryRunner:
             rows = job.result(timeout=TIMEOUT_SECONDS, max_results=MAX_ROWS)
             columns = [_column(field) for field in rows.schema]
             values = [[_to_json_value(value) for value in row.values()] for row in rows]
-        except QueryRejected as error:
-            raise QueryError(str(error)) from error
         except FuturesTimeoutError as error:
             raise QueryError(f"Query exceeded the {TIMEOUT_SECONDS}s time limit.") from error
         except GoogleAPICallError as error:
@@ -79,13 +74,25 @@ class BigQueryRunner:
         )
 
 
-def _credentials(settings: Settings) -> service_account.Credentials | None:
-    """Deployed: key JSON from an env var. Local: None, so the client uses GOOGLE_APPLICATION_CREDENTIALS."""
-    if not settings.gcp_service_account_json:
-        return None
-    return service_account.Credentials.from_service_account_info(
-        json.loads(settings.gcp_service_account_json)
-    )
+def create_client(settings: Settings) -> bigquery.Client:
+    credentials = None
+    if settings.gcp_service_account_json:
+        credentials = service_account.Credentials.from_service_account_info(
+            json.loads(settings.gcp_service_account_json)
+        )
+    return bigquery.Client(project=settings.gcp_project, location=LOCATION, credentials=credentials)
+
+
+def _check_dry_run(dry_run: bigquery.QueryJob) -> None:
+    # BigQuery's own parser reports the statement type, so we never parse SQL ourselves.
+    if dry_run.statement_type != "SELECT":
+        raise QueryError(f"Only single SELECT statements are allowed (got {dry_run.statement_type}).")
+    if dry_run.total_bytes_processed > MAX_BYTES_BILLED:
+        raise QueryError(
+            f"Query would scan {dry_run.total_bytes_processed / 1e9:.1f} GB, over the "
+            f"{MAX_BYTES_BILLED / 1e9:.1f} GB limit. Select fewer columns or narrow the "
+            "date range with _TABLE_SUFFIX."
+        )
 
 
 def _column(field: bigquery.SchemaField) -> Column:

@@ -19,9 +19,9 @@ type Row = { [column: string]: unknown }
 
 type PlotProps = { spec: ChartSpec; rows: Row[] }
 
-// If the spec doesn't match its query's columns, skip the chart; the data table still shows the result.
+// The backend validates each chart against its query's result before sending it.
 export function Chart({ spec, result }: { spec: ChartSpec; result: QueryResult | undefined }) {
-  if (!result || !fitsResult(spec, result)) return null
+  if (!result) return null
   const rows = toRows(result)
 
   return (
@@ -83,12 +83,6 @@ function compactTick(spec: ChartSpec) {
 
 function tooltipFormatter(value: unknown, name: unknown): [string, string] {
   return [formatValue(value, String(name)), columnLabel(String(name))]
-}
-
-function fitsResult(spec: ChartSpec, result: QueryResult): boolean {
-  const columns = new Set(result.columns.map((column) => column.name))
-  const needed = spec.type === 'kpi' ? spec.y.slice(0, 1) : [spec.x ?? '', ...spec.y]
-  return result.rows.length > 0 && needed.length > 0 && needed.every((column) => columns.has(column))
 }
 
 function toRows(result: QueryResult): Row[] {

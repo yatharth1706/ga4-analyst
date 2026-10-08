@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from app.agent.events import Event
 from app.agent.history import Turn
 from app.agent.loop import Agent
-from app.bigquery.client import BigQueryRunner
+from app.bigquery.client import BigQueryRunner, create_client
 from app.config import load_settings
 from app.llm.gemini import GeminiClient
 
@@ -28,7 +28,9 @@ class ChatRequest(BaseModel):
 @lru_cache
 def get_agent() -> Agent:
     settings = load_settings()
-    return Agent(GeminiClient(settings.gemini_api_key, settings.gemini_model), BigQueryRunner(settings))
+    return Agent(
+        GeminiClient(settings.gemini_api_key, settings.gemini_model), BigQueryRunner(create_client(settings))
+    )
 
 
 @app.get("/api/health")
