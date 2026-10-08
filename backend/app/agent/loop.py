@@ -1,9 +1,7 @@
 """The agent loop: the model calls tools until it can answer, and progress streams out as events."""
 
 import logging
-import time
-import uuid
-from collections.abc import Generator, Iterator
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -45,79 +43,36 @@ class Agent:
         self._system_prompt = _load_system_prompt()
 
     def run(self, question: str, past_turns: list[history.Turn]) -> Iterator[Event]:
-        """Answers one question, yielding progress events and finishing with `done` or `error`."""
-        turn_id = uuid.uuid4().hex[:8]
-        started = time.monotonic()
-        log.info("turn=%s question=%r history_turns=%d", turn_id, question, len(past_turns))
-
+        log.info("question=%r history_turns=%d", question, len(past_turns))
         toolbox = Toolbox(self._runner)
         contents = history.to_contents(past_turns) + [gemini.user_text(question)]
+
         try:
-            answer = yield from self._loop(turn_id, contents, toolbox)
+            for _ in range(self._max_iterations):
+                reply = self._llm.generate(self._system_prompt, contents, DECLARATIONS)
+                contents.append(reply.content)
+                if not reply.function_calls:
+                    break  # plain text: this is the answer
+
+                results = []
+                for call in reply.function_calls:
+                    result = yield from toolbox.execute(call)  # streams query events as it runs
+                    log.info("tool=%s args=%s error=%s", call.name, call.args, result.get("error"))
+                    results.append((call, result))
+                contents.append(gemini.function_responses(results))
+
+            if reply.function_calls:
+                # Out of rounds: ask once more with tools disabled, so it must answer.
+                system = f"{self._system_prompt}\n\n{WRAP_UP_INSTRUCTION}"
+                reply = self._llm.generate(system, contents, DECLARATIONS, allow_tool_calls=False)
+
+            if not reply.text:
+                raise LLMError("The AI returned an empty answer. Please retry.", retryable=True)
         except LLMError as error:
-            log.warning("turn=%s llm_error=%r", turn_id, str(error))
+            log.warning("llm error: %s", error)
             yield Event("error", {"message": str(error), "retryable": error.retryable})
             return
 
-        log.info(
-            "turn=%s done in %.1fs, queries=%d", turn_id, time.monotonic() - started, len(toolbox.queries)
-        )
-        yield Event("answer", {"text": answer})
-        summary = history.summarize_turn(question, answer, list(toolbox.queries.values()))
-        yield Event("done", {"turn": summary.model_dump()})
-
-    def _loop(
-        self, turn_id: str, contents: list[dict[str, Any]], toolbox: Toolbox
-    ) -> Generator[Event, None, str]:
-        for iteration in range(1, self._max_iterations + 1):
-            reply = self._generate(turn_id, iteration, self._system_prompt, contents)
-            contents.append(reply.content)
-            if not reply.function_calls:
-                return _final_text(reply)
-
-            results = []
-            for call in reply.function_calls:
-                result = yield from toolbox.execute(call)
-                log.info("turn=%s tool=%s args=%s result=%s", turn_id, call.name, call.args, _brief(result))
-                results.append((call, result))
-            contents.append(gemini.function_responses(results))
-
-        log.warning("turn=%s hit the %d-iteration limit, forcing an answer", turn_id, self._max_iterations)
-        system = f"{self._system_prompt}\n\n{WRAP_UP_INSTRUCTION}"
-        reply = self._generate(turn_id, self._max_iterations + 1, system, contents, allow_tool_calls=False)
-        return _final_text(reply)
-
-    def _generate(
-        self,
-        turn_id: str,
-        iteration: int,
-        system: str,
-        contents: list[dict[str, Any]],
-        allow_tool_calls: bool = True,
-    ) -> Reply:
-        started = time.monotonic()
-        reply = self._llm.generate(system, contents, DECLARATIONS, allow_tool_calls=allow_tool_calls)
-        log.info(
-            "turn=%s iteration=%d llm=%.1fs tool_calls=%d tokens_in=%s tokens_out=%s",
-            turn_id,
-            iteration,
-            time.monotonic() - started,
-            len(reply.function_calls),
-            reply.usage.get("promptTokenCount"),
-            reply.usage.get("candidatesTokenCount"),
-        )
-        return reply
-
-
-def _final_text(reply: Reply) -> str:
-    if not reply.text:
-        raise LLMError("The AI returned an empty answer. Please retry.", retryable=True)
-    return reply.text
-
-
-def _brief(result: dict[str, Any]) -> str:
-    if "error" in result:
-        return f"error: {result['error']}"
-    if "row_count" in result:
-        return f"{result['query_id']} rows={result['row_count']}"
-    return "ok"
+        yield Event("answer", {"text": reply.text})
+        turn = history.summarize_turn(question, reply.text, list(toolbox.queries.values()))
+        yield Event("done", {"turn": turn.model_dump()})
