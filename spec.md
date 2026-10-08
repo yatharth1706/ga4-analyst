@@ -195,13 +195,13 @@ POST /api/chat
 ```
 
 - History is rendered into earlier user/model turns: the model turn contains the answer plus a short "queries run" note (SQL + preview), so follow-ups can reuse the filters and definitions.
-- Limits: last 10 turns, each field size-capped, request ≤ 200 KB. Over the limit, the oldest turns are dropped.
+- Limits: every field is size-capped (pydantic), at most 50 turns are accepted, and only the last 10 are sent to the model.
 
 ### Response: `text/event-stream`
 
 | Event | Payload |
 |---|---|
-| `step` | `{query_id, purpose, sql}` — query started |
+| `query_started` | `{query_id, purpose, sql}` |
 | `query_result` | `{query_id, columns, rows (≤ BQ_MAX_ROWS), row_count, truncated, bytes_processed, duration_ms}` |
 | `query_error` | `{query_id, error}` (the model will usually retry) |
 | `chart` | `{query_id, type, title, x, y}` |

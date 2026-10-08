@@ -19,16 +19,21 @@ Working notes, kept as we go. Condensed to one page at the end.
 - **Dataset knowledge is a curated notes file in the prompt, not a schema-dump tool.** The traps (below) aren't visible in a schema.
 - **Model: `gemini-3.8-flash` (configurable).** Probed three models with a throwaway raw-HTTP loop on real data. All three got Nov vs Dec right ($144,260 vs $160,555) and applied the dataset caveats. Flash was fastest (~4–7s per call vs 5–13s for 3.1 Pro) and cheapest, with equal accuracy on our questions. Pinned a version instead of the `-latest` aliases so behaviour doesn't change under us.
 - **The probe confirmed the loop design:** Gemini returns several function calls in one turn (Pro asked for 3 queries at once), and follow-ups work from plain-text history without the hidden `thoughtSignature` data.
+- **Synchronous loop, streamed as a generator.** The agent loop is a plain Python generator that yields progress events; FastAPI streams it as server-sent events from a worker thread. No async code, so the loop reads top to bottom. Tool handlers are generators too (`result = yield from toolbox.execute(call)`), so a query can announce "started" before it finishes.
+- **Bad chart specs go back to the model, not to the UI.** `create_chart` checks the spec against the real query result (columns exist, y columns are numeric, row limits) and returns a fixable error message, so the model corrects itself inside the loop.
+- **Iteration cap of 10, then one forced answer** with tool calls disabled, so a confused model can't loop forever.
 
 ## Where we got stuck / surprises
 
 - **Per-product funnel numbers are misleading.** `view_item` events carry ~7 items on average (max 12) and `add_to_cart` ~11, not just the product viewed, and none of them match the page title. Products like "Google F/C Long Sleeve Tee Ash" show 28K views, 9K add-to-carts and 0 purchases. *Resolution:* the notes tell the model that per-product view counts are inflated and conversion rates are only relative, and to say so.
 - **`item_id` doesn't join across event types** (only 5 IDs match between views and purchases); `item_name` does (388 of 396). *Resolution:* the notes say to join on `item_name`.
 - **Obfuscation placeholders are large.** `<Other>` and `(data deleted)` appear in the source or medium of about a third of first-touch revenue. *Resolution:* keep them in totals, flag them in answers, and exclude them when ranking named items.
+- **First end-to-end answer took 55s.** For "top 5 products" the model ran 4 queries one after another (a placeholder check, a total for context...), and each BigQuery round trip takes ~5–8s including the dry run. *Resolution:* the prompt now asks for the fewest queries that answer the question and to batch independent ones; the same question dropped to 1 query and 22s.
 
 ## Cut / deprioritized
 
-*(filled in as we go)*
+- **Parallel tool calls run one after another.** Running them concurrently would save time when the model batches queries, but complicates event ordering; the prompt change above recovered most of the latency.
+- **Word-by-word answer streaming.** Progress events stream; the final text arrives in one piece.
 
 ## With 40 more hours
 
