@@ -4,33 +4,15 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.agent.loop import Agent
-from app.config import Settings
-from app.main import app, get_agent, get_settings
+from app.main import app, get_agent
 from tests.fakes import REVENUE_BY_DEVICE, FakeLLM, FakeRunner, sql, text_reply, tool_reply
-
-
-def settings(access_code=None) -> Settings:
-    return Settings(
-        gemini_api_key="key",
-        gemini_model="model",
-        gcp_project="project",
-        gcp_service_account_json=None,
-        bq_location="US",
-        bq_max_bytes_billed=1,
-        bq_timeout_seconds=1,
-        bq_max_rows=500,
-        model_max_rows=100,
-        max_iterations=10,
-        access_code=access_code,
-    )
 
 
 @pytest.fixture
 def client():
     llm = FakeLLM(tool_reply(sql("SELECT device")), text_reply("Desktop leads."))
     runner = FakeRunner({"SELECT device": REVENUE_BY_DEVICE})
-    app.dependency_overrides[get_agent] = lambda: Agent(llm, runner, model_max_rows=100, max_iterations=10)
-    app.dependency_overrides[get_settings] = settings
+    app.dependency_overrides[get_agent] = lambda: Agent(llm, runner, model_max_rows=100)
     yield TestClient(app)
     app.dependency_overrides.clear()
 
@@ -57,14 +39,6 @@ def test_empty_question_is_rejected(client):
     assert client.post("/api/chat", json={"question": ""}).status_code == 422
 
 
-def test_access_code_is_required_when_configured(client):
-    app.dependency_overrides[get_settings] = lambda: settings(access_code="secret")
-
-    assert client.post("/api/chat", json={"question": "Hi"}).status_code == 401
-    ok = client.post("/api/chat", json={"question": "Hi"}, headers={"X-Access-Code": "secret"})
-    assert ok.status_code == 200
-
-
 def test_unexpected_error_mid_stream_becomes_an_error_event(client):
     class BrokenAgent:
         def run(self, question, history):
@@ -75,4 +49,6 @@ def test_unexpected_error_mid_stream_becomes_an_error_event(client):
 
     events = parse_sse(client.post("/api/chat", json={"question": "Hi"}).text)
 
-    assert events == [("error", {"message": "Something went wrong on our side. Please retry.", "retryable": True})]
+    assert events == [
+        ("error", {"message": "Something went wrong on our side. Please retry.", "retryable": True})
+    ]

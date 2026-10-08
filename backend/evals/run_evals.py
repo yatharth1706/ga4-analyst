@@ -79,29 +79,26 @@ def ungrounded_numbers(answer: str, data_values: list[float]) -> list[str]:
     """Numbers the model wrote that don't match any query result, i.e. arithmetic it did itself.
 
     Small whole numbers (ranks, "top 5", days of the month) and years are skipped.
-    Signs are ignored ("fell 64.3%" vs a pct_change of -64.3), a percentage may come back
-    from SQL as a fraction (11.3 vs 0.113), and one-decimal rounding is allowed.
+    A percentage may come back from SQL as a fraction (11.3 vs 0.113).
     """
+    as_percentages = [value * 100 for value in data_values]
     ungrounded = []
     for text in NUMBER.findall(answer):
         value = float(text.replace(",", ""))
         if (value.is_integer() and value <= 31) or 2019 <= value <= 2022:
             continue
-        if not any(close_enough(value, candidate) for v in data_values for candidate in (abs(v), abs(v) * 100)):
+        if not (contains(data_values, value) or contains(as_percentages, value)):
             ungrounded.append(text)
     return ungrounded
-
-
-def close_enough(written: float, returned: float) -> bool:
-    return abs(written - returned) <= max(written * TOLERANCE, 0.05)
 
 
 def numbers_in_rows(rows: list[list[Any]]) -> list[float]:
     return [float(value) for row in rows for value in row if isinstance(value, (int, float))]
 
 
-def contains(values: list[float], expected: float) -> bool:
-    return any(abs(value - expected) <= abs(expected) * TOLERANCE for value in values)
+def contains(values: list[float], target: float) -> bool:
+    """Signs are ignored ("fell 64.3%" vs -64.3); allows 1% or one-decimal rounding."""
+    return any(abs(abs(value) - target) <= max(target * TOLERANCE, 0.05) for value in values)
 
 
 def write_report(results: list[CaseResult]) -> None:
@@ -130,7 +127,9 @@ def write_report(results: list[CaseResult]) -> None:
 def main() -> None:
     logging.basicConfig(level=logging.WARNING, force=True)
     selected = set(sys.argv[1:])
-    cases = [case for case in yaml.safe_load(GOLDEN_FILE.read_text()) if not selected or case["id"] in selected]
+    cases = [
+        case for case in yaml.safe_load(GOLDEN_FILE.read_text()) if not selected or case["id"] in selected
+    ]
     agent = get_agent()
 
     results = []

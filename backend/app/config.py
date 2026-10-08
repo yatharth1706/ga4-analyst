@@ -15,8 +15,6 @@ class Settings:
     bq_timeout_seconds: int
     bq_max_rows: int
     model_max_rows: int
-    max_iterations: int
-    access_code: str | None
 
 
 def load_settings() -> Settings:
@@ -31,8 +29,6 @@ def load_settings() -> Settings:
         bq_timeout_seconds=int(os.getenv("BQ_TIMEOUT_SECONDS", 30)),
         bq_max_rows=int(os.getenv("BQ_MAX_ROWS", 500)),
         model_max_rows=int(os.getenv("MODEL_MAX_ROWS", 100)),
-        max_iterations=int(os.getenv("AGENT_MAX_ITERATIONS", 10)),
-        access_code=os.getenv("APP_ACCESS_CODE") or None,
     )
 
 

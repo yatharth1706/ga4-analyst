@@ -1,4 +1,4 @@
-// Mirrors the server-sent events from backend/app/agent (see spec §7).
+// Mirrors the server-sent events emitted by backend/app/agent (tools.py and loop.py).
 
 export type Column = { name: string; type: string }
 

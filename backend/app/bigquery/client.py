@@ -1,11 +1,9 @@
-import base64
 import json
 import math
 import time
 from concurrent.futures import TimeoutError as FuturesTimeoutError
 from dataclasses import dataclass
 from datetime import date, datetime
-from datetime import time as time_of_day
 from decimal import Decimal
 from typing import Any
 
@@ -118,10 +116,8 @@ def _to_json_value(value: Any) -> Any:
         value = float(value)
     if isinstance(value, float) and not math.isfinite(value):
         return None
-    if isinstance(value, (datetime, date, time_of_day)):
+    if isinstance(value, (datetime, date)):
         return value.isoformat()
-    if isinstance(value, bytes):
-        return base64.b64encode(value).decode()
     if isinstance(value, list):
         return [_to_json_value(item) for item in value]
     if isinstance(value, dict):

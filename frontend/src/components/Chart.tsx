@@ -16,7 +16,7 @@ import type { ChartSpec, QueryResult } from '../lib/types'
 const SERIES_COLORS = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)']
 const LONG_LABEL = 12
 
-type Record = { [column: string]: unknown }
+type Row = { [column: string]: unknown }
 
 /**
  * Renders a chart spec against the rows of the query it references.
@@ -24,32 +24,32 @@ type Record = { [column: string]: unknown }
  */
 export function Chart({ spec, result }: { spec: ChartSpec; result: QueryResult | undefined }) {
   if (!result || !fitsResult(spec, result)) return null
-  const records = toRecords(result)
+  const rows = toRows(result)
 
   return (
     <figure className="chart">
       <figcaption>{spec.title}</figcaption>
       {spec.type === 'kpi' ? (
-        <p className="kpi-value">{formatValue(records[0]?.[spec.y[0]], spec.y[0])}</p>
+        <p className="kpi-value">{formatValue(rows[0]?.[spec.y[0]], spec.y[0])}</p>
       ) : (
-        <ResponsiveContainer width="100%" height={chartHeight(spec, records)}>
-          {spec.type === 'line' ? <LinePlot spec={spec} records={records} /> : <BarPlot spec={spec} records={records} />}
+        <ResponsiveContainer width="100%" height={chartHeight(spec, rows)}>
+          {spec.type === 'line' ? <LinePlot spec={spec} rows={rows} /> : <BarPlot spec={spec} rows={rows} />}
         </ResponsiveContainer>
       )}
     </figure>
   )
 }
 
-function BarPlot({ spec, records }: { spec: ChartSpec; records: Record[] }) {
+function BarPlot({ spec, rows }: { spec: ChartSpec; rows: Row[] }) {
   const x = spec.x as string
-  const horizontal = hasLongLabels(records, x)
+  const horizontal = hasLongLabels(rows, x)
   return (
-    <BarChart data={records} layout={horizontal ? 'vertical' : 'horizontal'} margin={{ left: 8, right: 16 }}>
+    <BarChart data={rows} layout={horizontal ? 'vertical' : 'horizontal'} margin={{ left: 8, right: 16 }}>
       <CartesianGrid stroke="var(--grid)" horizontal={!horizontal} vertical={horizontal} />
       {horizontal ? (
         <>
           <XAxis type="number" tickFormatter={(value) => formatValue(value, spec.y[0], { compact: true })} {...axisStyle} />
-          <YAxis type="category" dataKey={x} width={labelWidth(records, x)} interval={0} {...axisStyle} />
+          <YAxis type="category" dataKey={x} width={labelWidth(rows, x)} interval={0} {...axisStyle} />
         </>
       ) : (
         <>
@@ -73,9 +73,9 @@ function BarPlot({ spec, records }: { spec: ChartSpec; records: Record[] }) {
   )
 }
 
-function LinePlot({ spec, records }: { spec: ChartSpec; records: Record[] }) {
+function LinePlot({ spec, rows }: { spec: ChartSpec; rows: Row[] }) {
   return (
-    <LineChart data={records} margin={{ left: 8, right: 16 }}>
+    <LineChart data={rows} margin={{ left: 8, right: 16 }}>
       <CartesianGrid stroke="var(--grid)" vertical={false} />
       <XAxis dataKey={spec.x as string} {...axisStyle} />
       <YAxis tickFormatter={(value) => formatValue(value, spec.y[0], { compact: true })} {...axisStyle} />
@@ -88,7 +88,7 @@ function LinePlot({ spec, records }: { spec: ChartSpec; records: Record[] }) {
           name={column}
           stroke={SERIES_COLORS[index]}
           strokeWidth={2}
-          dot={records.length <= 31}
+          dot={rows.length <= 31}
           activeDot={{ r: 5 }}
         />
       ))}
@@ -118,22 +118,22 @@ function fitsResult(spec: ChartSpec, result: QueryResult): boolean {
   return needed.length > 0 && needed.every((column) => names.has(column)) && result.rows.length > 0
 }
 
-function toRecords(result: QueryResult): Record[] {
+function toRows(result: QueryResult): Row[] {
   return result.rows.map((row) =>
     Object.fromEntries(result.columns.map((column, index) => [column.name, row[index]])),
   )
 }
 
-function hasLongLabels(records: Record[], x: string): boolean {
-  return records.some((record) => String(record[x]).length > LONG_LABEL)
+function hasLongLabels(rows: Row[], x: string): boolean {
+  return rows.some((row) => String(row[x]).length > LONG_LABEL)
 }
 
-function labelWidth(records: Record[], x: string): number {
-  const longest = Math.max(...records.map((record) => String(record[x]).length))
+function labelWidth(rows: Row[], x: string): number {
+  const longest = Math.max(...rows.map((row) => String(row[x]).length))
   return Math.min(240, longest * 7 + 8)
 }
 
-function chartHeight(spec: ChartSpec, records: Record[]): number {
-  const horizontalBars = spec.type === 'bar' && hasLongLabels(records, spec.x as string)
-  return horizontalBars ? Math.max(160, records.length * 36 + 40) : 300
+function chartHeight(spec: ChartSpec, rows: Row[]): number {
+  const horizontalBars = spec.type === 'bar' && hasLongLabels(rows, spec.x as string)
+  return horizontalBars ? Math.max(160, rows.length * 36 + 40) : 300
 }

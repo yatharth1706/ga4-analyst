@@ -1,4 +1,6 @@
 const MONEY_COLUMN = /revenue|usd|price|sales|aov|order_value/i
+// "revenue_share" or "revenue_pct_change" are ratios, not dollars.
+const RATIO_COLUMN = /share|pct|percent|rate|ratio/i
 
 const integer = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const decimal = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
@@ -10,7 +12,8 @@ export function formatValue(value: unknown, column = '', options: { compact?: bo
   if (typeof value !== 'number') return String(value)
   const digits = options.compact ? compact : Number.isInteger(value) || Math.abs(value) >= 100 ? integer : decimal
   const text = digits.format(value)
-  return MONEY_COLUMN.test(column) ? `$${text}` : text
+  const isMoney = MONEY_COLUMN.test(column) && !RATIO_COLUMN.test(column)
+  return isMoney ? `$${text}` : text
 }
 
 export function formatBytes(bytes: number): string {

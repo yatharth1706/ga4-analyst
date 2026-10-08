@@ -16,6 +16,7 @@ from app.llm.gemini import LLMError, Reply
 log = logging.getLogger(__name__)
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
+MAX_ITERATIONS = 10
 WRAP_UP_INSTRUCTION = (
     "You have reached the limit of tool calls for this question. Answer now using only "
     "the query results you already have, and say what you could not check."
@@ -37,7 +38,9 @@ def load_system_prompt() -> str:
 
 
 class Agent:
-    def __init__(self, llm: LLM, runner: QueryRunner, model_max_rows: int, max_iterations: int):
+    def __init__(
+        self, llm: LLM, runner: QueryRunner, model_max_rows: int, max_iterations: int = MAX_ITERATIONS
+    ):
         self._llm = llm
         self._runner = runner
         self._model_max_rows = model_max_rows
@@ -59,7 +62,9 @@ class Agent:
             yield Event("error", {"message": str(error), "retryable": error.retryable})
             return
 
-        log.info("turn=%s done in %.1fs, queries=%d", turn_id, time.monotonic() - started, len(toolbox.queries))
+        log.info(
+            "turn=%s done in %.1fs, queries=%d", turn_id, time.monotonic() - started, len(toolbox.queries)
+        )
         yield Event("answer", {"text": answer})
         summary = history.summarize_turn(question, answer, list(toolbox.queries.values()))
         yield Event("done", {"turn": summary.model_dump()})

@@ -30,7 +30,7 @@ class LLMError(Exception):
 class FunctionCall:
     name: str
     args: dict[str, Any]
-    id: str | None = None
+    id: str | None = None  # Gemini tags each call; echoing it back pairs results with parallel calls
 
 
 @dataclass
@@ -65,9 +65,7 @@ class GeminiClient:
             "systemInstruction": {"parts": [{"text": system}]},
             "contents": contents,
             "tools": [{"functionDeclarations": tools}],
-            "toolConfig": {
-                "functionCallingConfig": {"mode": "AUTO" if allow_tool_calls else "NONE"}
-            },
+            "toolConfig": {"functionCallingConfig": {"mode": "AUTO" if allow_tool_calls else "NONE"}},
         }
         return _parse_reply(self._post(body))
 
@@ -137,7 +135,9 @@ def _parse_reply(data: dict[str, Any]) -> Reply:
         for part in parts
         if "functionCall" in part
     ]
-    return Reply(content=content, text=text.strip(), function_calls=calls, usage=data.get("usageMetadata", {}))
+    return Reply(
+        content=content, text=text.strip(), function_calls=calls, usage=data.get("usageMetadata", {})
+    )
 
 
 def user_text(text: str) -> dict[str, Any]:

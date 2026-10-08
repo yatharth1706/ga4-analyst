@@ -11,9 +11,7 @@ class QueryRejected(Exception):
 
 def check_dry_run(statement_type: str, bytes_processed: int, max_bytes: int) -> None:
     if statement_type != "SELECT":
-        raise QueryRejected(
-            f"Only single SELECT statements are allowed (got {statement_type})."
-        )
+        raise QueryRejected(f"Only single SELECT statements are allowed (got {statement_type}).")
     if bytes_processed > max_bytes:
         raise QueryRejected(
             f"Query would scan {bytes_processed / 1e9:.1f} GB, over the "

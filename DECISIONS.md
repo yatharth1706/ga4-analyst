@@ -40,6 +40,7 @@ Working notes, kept as we go. Condensed to one page at the end.
 
 - **Parallel tool calls run one after another.** Running them concurrently would save time when the model batches queries, but complicates event ordering; the prompt change above recovered most of the latency.
 - **Word-by-word answer streaming.** Progress events stream; the final text arrives in one piece.
+- **Authentication, including a simple access code.** The deployed link is shared only with reviewers; the BigQuery sandbox and the Gemini free tier cap what abuse could cost. A half-built access code was removed rather than left in.
 - **Dark mode and other UI polish.** Not evaluated; kept the UI to what the task needs.
 - **Enforcing grounded numbers at runtime.** The eval detects numbers the model computed itself; rejecting or flagging them live in the UI is on the 40-hour list.
 

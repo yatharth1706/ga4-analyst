@@ -1,6 +1,5 @@
 import type { Failure, ServerEvent, Turn } from './types'
 
-const ACCESS_CODE_KEY = 'ga4-analyst-access-code'
 const CONNECT_TIMEOUT_MS = 20_000
 // The server streams an event at least every query or model call; a longer silence means it's stuck.
 const IDLE_TIMEOUT_MS = 150_000
@@ -34,7 +33,7 @@ export async function streamChat(
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...accessCodeHeader() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, history }),
       signal: controller.signal,
     })
@@ -88,17 +87,7 @@ export function parseSseBlock(block: string): ServerEvent | null {
 }
 
 function errorForStatus(status: number): ChatError {
-  if (status === 401) return new ChatError('This demo needs a valid access code.', false)
   if (status === 422) return new ChatError('That question could not be sent. Try shortening it.', false)
   if (status >= 502) return new ChatError('The server is unavailable right now. Please retry.', true)
   return new ChatError(`The server returned an error (${status}). Please retry.`, status >= 500)
-}
-
-function accessCodeHeader(): Record<string, string> {
-  try {
-    const code = localStorage.getItem(ACCESS_CODE_KEY)
-    return code ? { 'X-Access-Code': code } : {}
-  } catch {
-    return {}
-  }
 }

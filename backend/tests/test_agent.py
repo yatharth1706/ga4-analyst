@@ -61,7 +61,12 @@ def test_sql_error_goes_back_to_the_model_which_retries():
     events = run_agent(llm, runner)
 
     assert types(events) == [
-        "query_started", "query_error", "query_started", "query_result", "answer", "done",
+        "query_started",
+        "query_error",
+        "query_started",
+        "query_result",
+        "answer",
+        "done",
     ]
     error_response = llm.requests[1]["contents"][-1]["parts"][0]["functionResponse"]["response"]
     assert error_response == {"query_id": "q1", "error": "Unrecognized name: revenue"}
@@ -79,7 +84,13 @@ def test_valid_chart_is_streamed():
     events = run_agent(llm, runner)
 
     chart_event = next(event for event in events if event.type == "chart")
-    assert chart_event.data == {"query_id": "q1", "type": "bar", "title": "Chart", "x": "device", "y": ["revenue"]}
+    assert chart_event.data == {
+        "query_id": "q1",
+        "type": "bar",
+        "title": "Chart",
+        "x": "device",
+        "y": ["revenue"],
+    }
 
 
 def test_invalid_chart_returns_an_error_to_the_model_instead_of_streaming():
@@ -138,7 +149,11 @@ def test_history_is_sent_to_the_model_before_the_new_question():
     past = Turn(
         question="Top products?",
         answer="Zip Hoodie leads.",
-        queries=[QueryRecord(purpose="Top products", sql="SELECT item", columns=["item"], preview=[["Hoodie"]], row_count=1)],
+        queries=[
+            QueryRecord(
+                purpose="Top products", sql="SELECT item", columns=["item"], preview=[["Hoodie"]], row_count=1
+            )
+        ],
     )
     llm = FakeLLM(text_reply("In December..."))
 
