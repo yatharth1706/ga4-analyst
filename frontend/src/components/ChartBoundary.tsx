@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from 'react'
 
-/** If a chart throws while rendering, drop just the chart; the message and its tables stay. */
+// Without this, an error inside one chart would unmount the whole app.
 export class ChartBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
 

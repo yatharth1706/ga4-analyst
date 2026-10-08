@@ -10,11 +10,6 @@ class Settings:
     gemini_model: str
     gcp_project: str
     gcp_service_account_json: str | None
-    bq_location: str
-    bq_max_bytes_billed: int
-    bq_timeout_seconds: int
-    bq_max_rows: int
-    model_max_rows: int
 
 
 def load_settings() -> Settings:
@@ -24,11 +19,6 @@ def load_settings() -> Settings:
         gemini_model=_required("GEMINI_MODEL"),
         gcp_project=_required("GOOGLE_CLOUD_PROJECT"),
         gcp_service_account_json=os.getenv("GCP_SERVICE_ACCOUNT_JSON") or None,
-        bq_location=os.getenv("BQ_LOCATION", "US"),
-        bq_max_bytes_billed=int(os.getenv("BQ_MAX_BYTES_BILLED", 3_000_000_000)),
-        bq_timeout_seconds=int(os.getenv("BQ_TIMEOUT_SECONDS", 30)),
-        bq_max_rows=int(os.getenv("BQ_MAX_ROWS", 500)),
-        model_max_rows=int(os.getenv("MODEL_MAX_ROWS", 100)),
     )
 
 

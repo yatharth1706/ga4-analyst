@@ -14,6 +14,11 @@ from google.oauth2 import service_account
 from app.bigquery.guard import QueryRejected, check_dry_run
 from app.config import Settings
 
+LOCATION = "US"
+MAX_BYTES_BILLED = 3_000_000_000  # a full scan is 3.6 GB; the heaviest realistic query ~1.4 GB
+TIMEOUT_SECONDS = 30
+MAX_ROWS = 500  # rows fetched per query: shown in the UI table and used for charts
+
 
 class QueryError(Exception):
     """A query failed or was rejected. The message is safe to show the model and the user."""
@@ -40,43 +45,28 @@ class QueryResult:
 
 class BigQueryRunner:
     def __init__(self, settings: Settings):
-        self._settings = settings
         self._client = bigquery.Client(
-            project=settings.gcp_project,
-            location=settings.bq_location,
-            credentials=_credentials(settings),
+            project=settings.gcp_project, location=LOCATION, credentials=_credentials(settings)
         )
 
     def run(self, sql: str) -> QueryResult:
         started = time.monotonic()
         try:
-            dry_run = self._client.query(
-                sql, job_config=bigquery.QueryJobConfig(dry_run=True, use_query_cache=False)
-            )
-            check_dry_run(
-                dry_run.statement_type,
-                dry_run.total_bytes_processed,
-                self._settings.bq_max_bytes_billed,
-            )
+            dry_run = self._client.query(sql, job_config=bigquery.QueryJobConfig(dry_run=True))
+            check_dry_run(dry_run.statement_type, dry_run.total_bytes_processed, MAX_BYTES_BILLED)
             job = self._client.query(
                 sql,
                 job_config=bigquery.QueryJobConfig(
-                    maximum_bytes_billed=self._settings.bq_max_bytes_billed,
-                    job_timeout_ms=self._settings.bq_timeout_seconds * 1000,
+                    maximum_bytes_billed=MAX_BYTES_BILLED, job_timeout_ms=TIMEOUT_SECONDS * 1000
                 ),
             )
-            rows = job.result(
-                timeout=self._settings.bq_timeout_seconds,
-                max_results=self._settings.bq_max_rows,
-            )
+            rows = job.result(timeout=TIMEOUT_SECONDS, max_results=MAX_ROWS)
             columns = [_column(field) for field in rows.schema]
             values = [[_to_json_value(value) for value in row.values()] for row in rows]
         except QueryRejected as error:
             raise QueryError(str(error)) from error
         except FuturesTimeoutError as error:
-            raise QueryError(
-                f"Query exceeded the {self._settings.bq_timeout_seconds}s time limit."
-            ) from error
+            raise QueryError(f"Query exceeded the {TIMEOUT_SECONDS}s time limit.") from error
         except GoogleAPICallError as error:
             raise QueryError(_error_reason(error)) from error
 

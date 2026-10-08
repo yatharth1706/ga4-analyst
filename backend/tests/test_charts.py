@@ -9,7 +9,7 @@ TRUNCATED = result({"day": "STRING", "users": "INTEGER"}, [["d", 1]], row_count=
 MANY_BARS = result({"item": "STRING", "units": "INTEGER"}, [[str(i), i] for i in range(60)])
 
 QUERIES = {
-    query_id: ExecutedQuery(query_id, "purpose", "SELECT", query_result)
+    query_id: ExecutedQuery("purpose", "SELECT", query_result)
     for query_id, query_result in {
         "devices": REVENUE_BY_DEVICE,
         "total": TOTAL,

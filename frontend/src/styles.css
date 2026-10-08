@@ -239,7 +239,7 @@ code {
 }
 
 .step-error .step-icon,
-.step-error {
+.query-error {
   color: var(--danger);
 }
 
@@ -266,7 +266,7 @@ code {
   padding: 0;
 }
 
-.step-error {
+.query-error {
   margin: 0;
   font-size: 14px;
 }
@@ -284,12 +284,6 @@ code {
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation-duration: 3s;
   }
 }
 
@@ -381,9 +375,5 @@ th {
 @media (max-width: 600px) {
   .step-meta {
     display: none;
-  }
-
-  .kpi-value {
-    font-size: 34px;
   }
 }

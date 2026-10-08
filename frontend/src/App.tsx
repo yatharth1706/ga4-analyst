@@ -18,9 +18,8 @@ export default function App() {
     try {
       await streamChat(question, state.history, (event) => dispatch({ type: 'event', event }))
     } catch (error) {
-      const failure =
-        error instanceof ChatError ? error : { message: 'Something went wrong. Please retry.', retryable: true }
-      dispatch({ type: 'failed', failure: { message: failure.message, retryable: failure.retryable } })
+      const failure = error instanceof ChatError ? error : new ChatError('Something went wrong. Please retry.', true)
+      dispatch({ type: 'failed', failure })
     }
   }
 

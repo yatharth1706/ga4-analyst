@@ -33,19 +33,16 @@ class LLM(Protocol):
     ) -> Reply: ...
 
 
-def load_system_prompt() -> str:
+def _load_system_prompt() -> str:
     return "\n\n".join((PROMPTS_DIR / name).read_text() for name in ("system.md", "ga4_notes.md"))
 
 
 class Agent:
-    def __init__(
-        self, llm: LLM, runner: QueryRunner, model_max_rows: int, max_iterations: int = MAX_ITERATIONS
-    ):
+    def __init__(self, llm: LLM, runner: QueryRunner, max_iterations: int = MAX_ITERATIONS):
         self._llm = llm
         self._runner = runner
-        self._model_max_rows = model_max_rows
         self._max_iterations = max_iterations
-        self._system_prompt = load_system_prompt()
+        self._system_prompt = _load_system_prompt()
 
     def run(self, question: str, past_turns: list[history.Turn]) -> Iterator[Event]:
         """Answers one question, yielding progress events and finishing with `done` or `error`."""
@@ -53,7 +50,7 @@ class Agent:
         started = time.monotonic()
         log.info("turn=%s question=%r history_turns=%d", turn_id, question, len(past_turns))
 
-        toolbox = Toolbox(self._runner, self._model_max_rows)
+        toolbox = Toolbox(self._runner)
         contents = history.to_contents(past_turns) + [gemini.user_text(question)]
         try:
             answer = yield from self._loop(turn_id, contents, toolbox)

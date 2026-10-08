@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 RETRY_DELAYS_SECONDS = (0, 1, 3)
+TIMEOUT_SECONDS = 90
 
 
 class LLMError(Exception):
@@ -42,16 +43,10 @@ class Reply:
 
 
 class GeminiClient:
-    def __init__(
-        self,
-        api_key: str,
-        model: str,
-        timeout_seconds: float = 90,
-        transport: httpx.BaseTransport | None = None,
-    ):
+    def __init__(self, api_key: str, model: str, transport: httpx.BaseTransport | None = None):
         self._url = API_URL.format(model=model)
         self._http = httpx.Client(
-            timeout=timeout_seconds, headers={"x-goog-api-key": api_key}, transport=transport
+            timeout=TIMEOUT_SECONDS, headers={"x-goog-api-key": api_key}, transport=transport
         )
 
     def generate(

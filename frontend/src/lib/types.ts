@@ -19,7 +19,6 @@ export type ChartSpec = {
   y: string[]
 }
 
-/** Compact record of a finished turn. The browser stores it and sends it back as history. */
 export type Turn = { question: string; answer: string; queries: unknown[] }
 
 export type ServerEvent =

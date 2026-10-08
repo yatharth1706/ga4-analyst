@@ -15,13 +15,12 @@ from app.llm import gemini
 MAX_TURNS_SENT_TO_MODEL = 10
 PREVIEW_ROWS = 10
 MAX_QUERIES_PER_TURN = 10
-MAX_ANSWER_CHARS = 10_000
-MAX_SQL_CHARS = 10_000
+MAX_TEXT_CHARS = 10_000
 
 
 class QueryRecord(BaseModel):
-    purpose: str = Field(max_length=500)
-    sql: str = Field(max_length=MAX_SQL_CHARS)
+    purpose: str = Field(max_length=MAX_TEXT_CHARS)
+    sql: str = Field(max_length=MAX_TEXT_CHARS)
     columns: list[str] = Field(max_length=100)
     preview: list[list[Any]] = Field(max_length=PREVIEW_ROWS)
     row_count: int
@@ -29,7 +28,7 @@ class QueryRecord(BaseModel):
 
 class Turn(BaseModel):
     question: str = Field(min_length=1, max_length=2_000)
-    answer: str = Field(max_length=MAX_ANSWER_CHARS)
+    answer: str = Field(max_length=MAX_TEXT_CHARS)
     queries: list[QueryRecord] = Field(default_factory=list, max_length=MAX_QUERIES_PER_TURN)
 
 
@@ -44,11 +43,11 @@ def to_contents(history: list[Turn]) -> list[dict[str, Any]]:
 def summarize_turn(question: str, answer: str, queries: list[ExecutedQuery]) -> Turn:
     return Turn(
         question=question,
-        answer=answer[:MAX_ANSWER_CHARS],
+        answer=answer[:MAX_TEXT_CHARS],
         queries=[
             QueryRecord(
-                purpose=query.purpose[:500],
-                sql=query.sql[:MAX_SQL_CHARS],
+                purpose=query.purpose[:MAX_TEXT_CHARS],
+                sql=query.sql[:MAX_TEXT_CHARS],
                 columns=[column.name for column in query.result.columns],
                 preview=query.result.rows[:PREVIEW_ROWS],
                 row_count=query.result.row_count,

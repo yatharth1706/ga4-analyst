@@ -5,14 +5,15 @@ const NUMERIC = new Set(['INTEGER', 'INT64', 'FLOAT', 'FLOAT64', 'NUMERIC', 'BIG
 
 export function DataTable({ result }: { result: QueryResult }) {
   if (result.rows.length === 0) return <p className="muted">No rows returned.</p>
+  const cellClass = result.columns.map((column) => (NUMERIC.has(column.type) ? 'numeric' : undefined))
 
   return (
     <div className="table-scroll">
       <table>
         <thead>
           <tr>
-            {result.columns.map((column) => (
-              <th key={column.name} className={NUMERIC.has(column.type) ? 'numeric' : undefined}>
+            {result.columns.map((column, index) => (
+              <th key={column.name} className={cellClass[index]}>
                 {column.name}
               </th>
             ))}
@@ -21,14 +22,11 @@ export function DataTable({ result }: { result: QueryResult }) {
         <tbody>
           {result.rows.map((row, rowIndex) => (
             <tr key={rowIndex}>
-              {row.map((value, columnIndex) => {
-                const column = result.columns[columnIndex]
-                return (
-                  <td key={columnIndex} className={NUMERIC.has(column.type) ? 'numeric' : undefined}>
-                    {typeof value === 'object' && value !== null ? JSON.stringify(value) : formatValue(value, column.name)}
-                  </td>
-                )
-              })}
+              {row.map((value, index) => (
+                <td key={index} className={cellClass[index]}>
+                  {formatValue(value, result.columns[index].name)}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>

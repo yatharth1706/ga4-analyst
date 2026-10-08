@@ -2,7 +2,6 @@ import type { AssistantMessage, Failure, Message, QueryStep, ServerEvent, Turn }
 
 export type ConversationState = {
   messages: Message[]
-  /** Compact turns from finished answers; sent with each new question for follow-up context. */
   history: Turn[]
 }
 

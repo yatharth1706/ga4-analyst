@@ -1,7 +1,7 @@
 import type { Failure, ServerEvent, Turn } from './types'
 
+// Give up instead of spinning forever if the server doesn't answer, or goes quiet mid-answer.
 const CONNECT_TIMEOUT_MS = 20_000
-// The server streams an event at least every query or model call; a longer silence means it's stuck.
 const IDLE_TIMEOUT_MS = 150_000
 
 export class ChatError extends Error implements Failure {
@@ -13,16 +13,12 @@ export class ChatError extends Error implements Failure {
   }
 }
 
-/**
- * Sends a question and calls `onEvent` for each server-sent event as it arrives.
- * EventSource only supports GET, so the stream is read from fetch's body directly.
- */
+// EventSource only supports GET, so the event stream is read from the fetch body.
 export async function streamChat(
   question: string,
   history: Turn[],
   onEvent: (event: ServerEvent) => void,
 ): Promise<void> {
-  // A hung connection would otherwise leave the chat spinning forever.
   const controller = new AbortController()
   let timer = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS)
   const restartIdleTimer = () => {

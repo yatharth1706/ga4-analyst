@@ -28,11 +28,7 @@ class ChatRequest(BaseModel):
 @lru_cache
 def get_agent() -> Agent:
     settings = load_settings()
-    return Agent(
-        llm=GeminiClient(settings.gemini_api_key, settings.gemini_model),
-        runner=BigQueryRunner(settings),
-        model_max_rows=settings.model_max_rows,
-    )
+    return Agent(GeminiClient(settings.gemini_api_key, settings.gemini_model), BigQueryRunner(settings))
 
 
 @app.get("/api/health")

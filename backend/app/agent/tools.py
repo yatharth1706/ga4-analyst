@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 CHART_TYPES = ("bar", "line", "kpi")
 NUMERIC_TYPES = {"INTEGER", "INT64", "FLOAT", "FLOAT64", "NUMERIC", "BIGNUMERIC"}
 MAX_BAR_ROWS = 50
+MODEL_MAX_ROWS = 100  # rows sent back to the model; it should aggregate in SQL, not page
 
 DECLARATIONS = [
     {
@@ -70,7 +71,6 @@ class QueryRunner(Protocol):
 
 @dataclass
 class ExecutedQuery:
-    query_id: str
     purpose: str
     sql: str
     result: QueryResult
@@ -83,9 +83,8 @@ class ChartError(Exception):
 class Toolbox:
     """Executes the model's tool calls for one chat turn and remembers successful queries."""
 
-    def __init__(self, runner: QueryRunner, model_max_rows: int):
+    def __init__(self, runner: QueryRunner):
         self._runner = runner
-        self._model_max_rows = model_max_rows
         self._query_count = 0
         self.queries: dict[str, ExecutedQuery] = {}
 
@@ -114,7 +113,7 @@ class Toolbox:
             yield Event("query_error", {"query_id": query_id, "error": str(error)})
             return {"query_id": query_id, "error": str(error)}
 
-        self.queries[query_id] = ExecutedQuery(query_id, purpose, sql, result)
+        self.queries[query_id] = ExecutedQuery(purpose, sql, result)
         yield Event(
             "query_result",
             {
@@ -127,7 +126,7 @@ class Toolbox:
                 "duration_ms": result.duration_ms,
             },
         )
-        rows_for_model = result.rows[: self._model_max_rows]
+        rows_for_model = result.rows[:MODEL_MAX_ROWS]
         return {
             "query_id": query_id,
             "columns": [f"{column.name} ({column.type})" for column in result.columns],

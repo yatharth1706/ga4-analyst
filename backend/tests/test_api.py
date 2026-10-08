@@ -12,7 +12,7 @@ from tests.fakes import REVENUE_BY_DEVICE, FakeLLM, FakeRunner, sql, text_reply,
 def client():
     llm = FakeLLM(tool_reply(sql("SELECT device")), text_reply("Desktop leads."))
     runner = FakeRunner({"SELECT device": REVENUE_BY_DEVICE})
-    app.dependency_overrides[get_agent] = lambda: Agent(llm, runner, model_max_rows=100)
+    app.dependency_overrides[get_agent] = lambda: Agent(llm, runner)
     yield TestClient(app)
     app.dependency_overrides.clear()
 

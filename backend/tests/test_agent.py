@@ -1,5 +1,6 @@
 from app.agent.history import QueryRecord, Turn
 from app.agent.loop import Agent
+from app.agent.tools import MODEL_MAX_ROWS
 from app.llm.gemini import LLMError
 from tests.fakes import (
     REVENUE_BY_DEVICE,
@@ -14,7 +15,7 @@ from tests.fakes import (
 
 
 def run_agent(llm, runner=None, question="Revenue by device?", history=None, max_iterations=10):
-    agent = Agent(llm, runner or FakeRunner({}), model_max_rows=2, max_iterations=max_iterations)
+    agent = Agent(llm, runner or FakeRunner({}), max_iterations=max_iterations)
     return list(agent.run(question, history or []))
 
 
@@ -38,8 +39,19 @@ def test_runs_a_query_then_answers():
     assert types(events) == ["query_started", "query_result", "answer", "done"]
     assert events[1].data["rows"] == REVENUE_BY_DEVICE.rows
     function_response = llm.requests[1]["contents"][-1]["parts"][0]["functionResponse"]
-    assert function_response["response"]["rows"] == REVENUE_BY_DEVICE.rows[:2]
-    assert function_response["response"]["truncated"] is True
+    assert function_response["response"]["rows"] == REVENUE_BY_DEVICE.rows
+
+
+def test_model_gets_a_capped_number_of_rows_while_the_browser_gets_all():
+    many_rows = result({"n": "INTEGER"}, [[i] for i in range(MODEL_MAX_ROWS + 50)])
+    llm = FakeLLM(tool_reply(sql("SELECT n")), text_reply("Done."))
+
+    events = run_agent(llm, FakeRunner({"SELECT n": many_rows}))
+
+    assert len(events[1].data["rows"]) == MODEL_MAX_ROWS + 50
+    response = llm.requests[1]["contents"][-1]["parts"][0]["functionResponse"]["response"]
+    assert len(response["rows"]) == MODEL_MAX_ROWS
+    assert response["truncated"] is True
 
 
 def test_parallel_calls_are_answered_together():

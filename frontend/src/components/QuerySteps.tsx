@@ -2,7 +2,6 @@ import { formatBytes, formatDuration } from '../lib/format'
 import type { QueryStep } from '../lib/types'
 import { DataTable } from './DataTable'
 
-/** The "show your work" list: one collapsible entry per query, with its SQL and data. */
 export function QuerySteps({ steps }: { steps: QueryStep[] }) {
   return (
     <ol className="steps">
@@ -17,7 +16,7 @@ export function QuerySteps({ steps }: { steps: QueryStep[] }) {
             <pre className="sql">
               <code>{step.sql}</code>
             </pre>
-            {step.status === 'error' && <p className="step-error">{step.error}</p>}
+            {step.status === 'error' && <p className="query-error">{step.error}</p>}
             {step.result && <DataTable result={step.result} />}
           </details>
         </li>
