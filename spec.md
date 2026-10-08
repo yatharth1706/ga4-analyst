@@ -44,7 +44,7 @@ All Gemini-specific code lives in `app/llm/gemini.py`, so switching providers (e
 
 Vercel functions don't reliably share memory between requests, so the server keeps **no conversation state**:
 
-- **Within a turn:** the full native tool-calling transcript (including Gemini `thoughtSignature` parts, which go back verbatim) lives in memory only for the duration of the request. **[verify]** which models return signatures and whether earlier turns need them; our design assumes they are needed only within the current turn.
+- **Within a turn:** the full native tool-calling transcript (including Gemini `thoughtSignature` parts, which go back verbatim) lives in memory only for the duration of the request. *Verified in Phase 0:* signatures arrive on the first function-call part of each response (also on final text), and follow-up turns built from plain-text history (no signatures) work correctly.
 - **Across turns:** the browser stores a compact history and sends it with every request (§7).
 
 Benefits: works on serverless, nothing is lost on restart, and the context stays small by design. The client can only send plain text (no fake tool calls), so a tampered history can't forge tool results.

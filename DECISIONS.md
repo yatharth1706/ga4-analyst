@@ -17,6 +17,8 @@ Working notes, kept as we go. Condensed to one page at the end.
 - **SQL safety comes from BigQuery's own checks, not a regex.** A dry run must report statement type `SELECT`; DML against the public data fails with 403 at dry run, and multi-statement input comes back as `SCRIPT` and is rejected. Then a byte cap (3 GB: a full scan is 3.6 GB, the heaviest realistic query ~1.4 GB), a timeout, a row cap, and a service account with only *BigQuery Job User*.
 - **Charts reference a `query_id` and carry no data.** The backend attaches the rows, so a chart can't show numbers BigQuery didn't return.
 - **Dataset knowledge is a curated notes file in the prompt, not a schema-dump tool.** The traps (below) aren't visible in a schema.
+- **Model: `gemini-3.8-flash` (configurable).** Probed three models with a throwaway raw-HTTP loop on real data. All three got Nov vs Dec right ($144,260 vs $160,555) and applied the dataset caveats. Flash was fastest (~4–7s per call vs 5–13s for 3.1 Pro) and cheapest, with equal accuracy on our questions. Pinned a version instead of the `-latest` aliases so behaviour doesn't change under us.
+- **The probe confirmed the loop design:** Gemini returns several function calls in one turn (Pro asked for 3 queries at once), and follow-ups work from plain-text history without the hidden `thoughtSignature` data.
 
 ## Where we got stuck / surprises
 
