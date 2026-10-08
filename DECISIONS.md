@@ -34,10 +34,14 @@ Working notes, kept as we go. Condensed to one page at the end.
 - **A dead backend left the chat spinning forever.** With the backend stopped, the dev proxy sometimes never answered the request. *Resolution:* the client aborts if no response arrives within 20s or the stream goes silent for 150s, and shows a Retry button.
 - **First end-to-end answer took 55s.** For "top 5 products" the model ran 4 queries one after another (a placeholder check, a total for context...), and each BigQuery round trip takes ~5–8s including the dry run. *Resolution:* the prompt now asks for the fewest queries that answer the question and to batch independent ones; the same question dropped to 1 query and 22s.
 
+- **Correctness is measured, not assumed.** `evals/run_evals.py` runs 10 golden questions through the real agent and checks the key numbers against hand-written reference SQL (10/10 pass), and flags "ungrounded" numbers: figures in the answer that no query returned. Telling the model to compute derived numbers (shares, growth, averages) in SQL removed most of them; the remaining cases are sums of a few rows (e.g. a combined total for placeholder sources).
+
 ## Cut / deprioritized
 
 - **Parallel tool calls run one after another.** Running them concurrently would save time when the model batches queries, but complicates event ordering; the prompt change above recovered most of the latency.
 - **Word-by-word answer streaming.** Progress events stream; the final text arrives in one piece.
+- **Dark mode and other UI polish.** Not evaluated; kept the UI to what the task needs.
+- **Enforcing grounded numbers at runtime.** The eval detects numbers the model computed itself; rejecting or flagging them live in the UI is on the 40-hour list.
 
 ## With 40 more hours
 

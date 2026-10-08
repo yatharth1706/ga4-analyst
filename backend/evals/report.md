@@ -2,64 +2,63 @@
 
 | Case | Result | Key numbers | Ungrounded numbers | Queries | Time |
 |---|---|---|---|---|---|
-| total_users | pass | users: answer | none | 2 | 46s |
-| top_products_revenue | pass | #1 Google Zip Hoodie F/C revenue: answer | none | 1 | 23s |
-| revenue_over_time | pass | Nov 2020 revenue: answer<br>Dec 2020 revenue: answer<br>Jan 2021 revenue: answer | 64.3 | 2 | 45s |
-| nov_vs_dec | pass | Nov revenue: answer<br>Dec revenue: answer | none | 2 | 38s |
-| revenue_by_source | pass | google / organic revenue: answer | 131,163, 36.2 | 2 | 42s |
-| revenue_by_device | pass | desktop revenue: answer<br>mobile revenue: answer | 1.6, 1.5 | 1 | 25s |
-| most_purchased_products | pass | #1 Google Clear Pen 4-Pack units: answer | none | 3 | 55s |
-| views_vs_purchases | manual | — | 0.6 | 4 | 72s |
-| followup_chain | pass | Crewneck Sweatshirt Navy, Dec: answer<br>Crewneck Sweatshirt Navy, Nov: answer | 17.5, 11.1 | 4 | 73s |
-| ambiguous | manual | — | none | 0 | 4s |
+| total_users | pass | users: answer | none | 1 | 22s |
+| top_products_revenue | pass | #1 Google Zip Hoodie F/C revenue: answer | none | 1 | 20s |
+| revenue_over_time | pass | Nov 2020 revenue: answer<br>Dec 2020 revenue: answer<br>Jan 2021 revenue: answer | 362,165 | 2 | 40s |
+| nov_vs_dec | pass | Nov revenue: answer<br>Dec revenue: answer | none | 2 | 36s |
+| revenue_by_source | pass | google / organic revenue: answer | 131,163, 36.2 | 2 | 38s |
+| revenue_by_device | pass | desktop revenue: answer<br>mobile revenue: answer | none | 1 | 23s |
+| most_purchased_products | pass | #1 Google Clear Pen 4-Pack units: answer | none | 2 | 41s |
+| views_vs_purchases | manual | — | 5,000 | 4 | 72s |
+| followup_chain | pass | Crewneck Sweatshirt Navy, Dec: answer<br>Crewneck Sweatshirt Navy, Nov: answer | none | 5 | 87s |
+| ambiguous | manual | — | none | 0 | 3s |
 
 ## total_users
 
 > How many users visited the store?
 
-A total of **270,154** unique users visited the store across **360,129** sessions.
+A total of **270,154 unique users** visited the Google Merchandise Store across **360,129 sessions**.
 
-- First-time visitors made up 257,314 of all unique users.
-- December 2020 saw the highest monthly traffic with 104,315 active users.
-- January 2021 followed with 94,790 active users, while November 2020 recorded 79,421 active users.
+- **December 2020** had the highest activity with 104,315 active users.
+- **January 2021** followed with 94,790 active users.
+- **November 2020** recorded 79,421 active users.
 
-Note: Data covers the entire available dataset range from November 1, 2020 through January 31, 2021.
+Note: Data covers the entire available dataset period from November 1, 2020 to January 31, 2021. Users are identified by their GA4 pseudo-ID (`user_pseudo_id`).
 
 ## top_products_revenue
 
 > What were the top 10 products by revenue?
 
-The top-earning product was the Google Zip Hoodie F/C, generating **$13,788** in revenue across **273** units sold.
+The top product by revenue was the **Google Zip Hoodie F/C**, generating **$13,788** from 273 units sold.
 
-- Google Crewneck Sweatshirt Navy followed in second with $10,714 (236 units), and Google Men's Tech Fleece Grey placed third with $9,965 (134 units).
-- Outerwear and fleece apparel accounted for all top 10 spots.
-- Super G Unisex Joggers drove the highest volume within the top 10, totaling 308 units ($9,529).
+- **Google Crewneck Sweatshirt Navy** followed in second place with **$10,714** in revenue across 236 units.
+- Apparel dominated the entire top 10 list, with hoodies, sweatshirts, jackets, and fleece apparel making up the highest-earning items.
+- **Super G Unisex Joggers** had the highest sales volume among the top 10 products with 308 units sold ($9,529 in revenue).
 
-Note: Based on all available data from November 1, 2020 to January 31, 2021, excluding obfuscated placeholder items.
+Note: Data covers November 1, 2020 through January 31, 2021, and excludes obfuscation placeholder values such as `<Other>`.
 
 ## revenue_over_time
 
 > How did revenue change over time?
 
-Total store revenue peaked in December 2020 at **$160,555** before falling by **64.3%** in January 2021 to $57,350.
+Total revenue across the three-month dataset was **$362,165**, peaking in December 2020 before dropping sharply in January 2021.
 
-- November 2020 generated $144,260 across 2,054 orders, then grew 11.3% in December to 2,434 orders.
-- Weekly revenue peaked during the week of December 7, 2020, reaching $59,865.
-- Average order value decreased each month, falling from $70.23 in November to $65.96 in December, and down to $47.63 in January.
-- Weekly sales dropped sharply after mid-December, suggesting a post-holiday seasonal contraction.
+- November 2020 generated $144,260 across 2,054 purchase events, rising steadily throughout the month.
+- December 2020 reached the highest monthly total at **$160,555** (an 11.3% month-over-month increase) across 2,434 purchase events.
+- January 2021 dropped to **$57,350** (a 64.3% month-over-month decline) across 1,204 purchase events.
+- On a weekly basis, revenue peaked at $59,865 during the week of December 7, 2020, before tapering off late in the month.
 
-Note: The data covers the available three-month window from November 1, 2020 through January 31, 2021.
+Note: Data covers November 1, 2020 through January 31, 2021, and revenue reflects order-level totals without transaction deduplication.
 
 ## nov_vs_dec
 
 > Compare revenue between November and December.
 
-December 2020 revenue reached **$160,555**, an 11.3% increase of **$16,295** over November 2020's **$144,260**.
+Revenue increased by **11.3%** from **$144,260** in November 2020 to **$160,555** in December 2020.
 
-- Order volume rose 18.5% from 2,054 to 2,434 purchases, which drove the overall revenue gain.
-- Average order value decreased from $70.23 in November to $65.96 in December.
-- December revenue was heavily concentrated in the first half of the month, peaking at $11,509 on December 16 before trailing off.
-- November revenue peaked toward the end of the month, reaching its high of $11,990 on November 30.
+- Total monthly revenue rose by $16,295.
+- Order volume grew by 18.5%, increasing from 2,054 purchase events in November to 2,434 in December.
+- Average order value decreased from $70.23 in November to $65.96 in December, indicating that top-line growth was driven by higher transaction volume rather than larger basket sizes.
 
 ## revenue_by_source
 
@@ -67,25 +66,27 @@ December 2020 revenue reached **$160,555**, an 11.3% increase of **$16,295** ove
 
 **Check by eye:** Must say traffic_source is the user's first-touch source, and flag <Other>/(data deleted).
 
-**Google** was the top traffic source, generating **$104,831** (28.9% of total revenue) across 1,620 purchase events between November 1, 2020, and January 31, 2021.
+**Google** generated the most revenue among all traffic sources, bringing in **$104,831** (28.9% of total store revenue) across 1,620 purchase events.
 
-* **google / organic** accounted for the vast majority of Google's volume with $95,775 (26.4% of total revenue), while google / cpc added $9,056 (2.5%).
-* **(direct)** was the next largest named source, contributing $79,650 (22.0%) from 1,251 purchase events.
-* **shop.googlemerchandisestore.com** referrals generated $46,521 (12.8%) across 701 purchases.
-* Obfuscated categories **`<Other>`** and **`(data deleted)`** combined for $131,163 (36.2% of total revenue).
+- Organic search drove the vast majority of Google revenue at $95,775 (26.4% of store revenue), with paid search (`cpc`) contributing $9,056.
+- Direct traffic (`(direct)`) ranked second among named sources, delivering $79,650 (22.0% share) across 1,251 purchases.
+- Self-referrals from `shop.googlemerchandisestore.com` generated $46,521 (12.8% share).
+- Obfuscation placeholders `<Other>` and `(data deleted)` accounted for a combined $131,163 (36.2% share).
 
-Note: This attribution is based on the user's first-touch acquisition source rather than the session that converted.
+Note: GA4 records the user's first-touch acquisition source rather than the converting session's source. Data covers November 1, 2020 through January 31, 2021.
 
 ## revenue_by_device
 
 > How does revenue differ between mobile and desktop users?
 
-Desktop users drove **$208,815** (57.7% of total revenue) compared to **$146,768** (40.5%) from mobile users.
+Desktop generated **$208,815** (57.7% of total revenue), outpacing mobile which brought in **$146,768** (40.5%).
 
-- **Order volume:** Desktop generated 3,226 purchases (56.7% of orders) versus 2,355 purchases (41.4%) on mobile.
-- **Average order value:** Desktop purchasers spent slightly more per transaction, with an AOV of $64.73 compared to $62.32 on mobile.
-- **Conversion efficiency:** Mobile recorded a slightly higher session conversion rate (1.6% vs 1.5% on desktop), suggesting desktop's higher overall revenue was driven by larger traffic volume (208,942 vs 143,185 sessions) rather than superior conversion efficiency.
-- **Tablet share:** Tablets contributed the remaining $6,582 (1.8% of total revenue) across 111 orders.
+- **Volume drives desktop revenue**: Desktop users placed 3,226 orders compared to 2,355 on mobile, driven primarily by a larger user base (158,917 desktop vs 109,195 mobile users).
+- **Average order value is comparable**: Desktop orders averaged $64.73 versus $62.32 for mobile.
+- **Conversion efficiency is slightly higher on mobile**: Mobile sessions converted at 1.6% (yielding $1.34 revenue per user), compared to 1.5% on desktop ($1.31 revenue per user).
+- **Tablets account for the remaining share**: Tablet users contributed $6,582 across 111 purchases (1.8% of revenue).
+
+Note: Data covers November 1, 2020 through January 31, 2021 across all available events.
 
 ## most_purchased_products
 
@@ -93,13 +94,13 @@ Desktop users drove **$208,815** (57.7% of total revenue) compared to **$146,768
 
 **Check by eye:** Should state whether 'purchases' means units or orders.
 
-Ranking by revenue (the standard ecommerce metric), the Google Zip Hoodie F/C generated the most sales at **$13,788** across 242 purchase events.
+Ranking by revenue (the standard metric), the **Google Zip Hoodie F/C** generated the most purchases at **$13,788** across 273 units sold.
 
-- Google Crewneck Sweatshirt Navy was second in revenue with **$10,714**, followed by Google Men's Tech Fleece Grey ($9,965).
-- By transaction frequency, Super G Unisex Joggers appeared in the most purchases (269 orders; $9,529).
-- By total units sold, lower-cost items led, topped by the Google Clear Pen 4-Pack with **444** units.
+* **Google Crewneck Sweatshirt Navy** was second with **$10,714** (236 units), followed by Google Men's Tech Fleece Grey at $9,965 (134 units).
+* Apparel items dominated the top revenue rankings, taking 9 of the top 10 positions.
+* If measured by sales volume (units sold) instead of revenue, lower-priced items led: Google Clear Pen 4-Pack was first with 444 units ($1,376), followed by Google Laptop and Cell Phone Stickers with 416 units ($1,095).
 
-Note: Data covers November 1, 2020 to January 31, 2021. Obfuscation placeholders such as `<Other>` were excluded from the product rankings.
+Note: Data covers November 1, 2020 through January 31, 2021; obfuscation placeholders were excluded from product rankings.
 
 ## views_vs_purchases
 
@@ -107,13 +108,14 @@ Note: Data covers November 1, 2020 to January 31, 2021. Obfuscation placeholders
 
 **Check by eye:** Must caveat that view_item events carry several items, so item 'views' are inflated; ranking is relative, not a true conversion rate.
 
-Among heavily viewed items (over 20,000 views), apparel products such as **Google Women's Striped L/S** (42,142 views) and **Google F/C Long Sleeve Tee Charcoal** (34,275 views) recorded **0 purchases**, falling well below the catalog baseline purchase rate of 0.6%.
+Several high-traffic apparel products generated tens of thousands of views but recorded **0 purchases**, led by Google Women's Striped L/S with **42,142 views**.
 
-* **Zero-conversion apparel:** Four high-traffic shirts had 0 purchases despite substantial exposure: Google Women's Striped L/S (42,142 views), Google F/C Long Sleeve Tee Charcoal (34,275 views), Google F/C Long Sleeve Tee Ash (27,987 views), and Google Eco Tee Black (20,989 views).
-* **Lowest-converting active sellers:** YouTube Women's Favorite Tee White logged 29,872 views but only 6 purchases (under 0.1% purchase rate), followed by Android Small Trace Journal Black with 30,471 views and 15 purchases (0.1%).
-* **Other underperforming staples:** Google Tee Green (31,578 views, 18 purchases, 0.1%) and Android Large Trace Journal Black (32,257 views, 25 purchases, 0.1%) also showed weak conversion.
+- Google Women's Striped L/S (42,142 views), Google F/C Long Sleeve Tee Charcoal (34,275 views), Google F/C Long Sleeve Tee Ash (27,987 views), and Google Eco Tee Black (20,989 views) each recorded zero purchases.
+- YouTube Women's Favorite Tee White accumulated 29,872 views but only 6 purchase events (0.0% conversion rate).
+- Android Small Trace Journal Black and Google Tee Green each exceeded 30,000 views, yet resulted in just 15 and 18 purchases respectively (0.1% conversion rate each).
+- For comparison, products with at least 5,000 views had an average view-to-purchase rate of 0.5%.
 
-Note: In GA4, `view_item` events often contain multiple items per event payload, which inflates per-product view counts. These view-to-purchase ratios should be used for relative comparison rather than absolute conversion rates.
+Note: In GA4, `view_item` events contain multiple products per event (averaging ~7), which inflates raw item view counts; view-to-purchase rates are best used for relative comparison.
 
 ## followup_chain
 
@@ -121,12 +123,12 @@ Note: In GA4, `view_item` events often contain multiple items per event payload,
 > What about just December?
 > How does that compare with November?
 
-Compared to November, December’s top five products saw mixed trends: three grew and two declined, led by a **213.1% revenue surge** for the **Google Canteen Bottle Black**.
+December's top seller, the Google Crewneck Sweatshirt Navy, grew **31.4%** month-over-month from $4,312 to $5,665, overtaking November's leader.
 
-- **Google Crewneck Sweatshirt Navy** rose **31.4%** from $4,312 (96 units) in November to $5,665 (124 units), taking the #1 spot.
-- **Google Canteen Bottle Black** saw the largest increase, jumping from $1,134 (57 units) to $3,550 (180 units).
-- **Super G Unisex Joggers** grew 15.2% from $4,102 (133 units) to $4,725 (153 units).
-- **Google Zip Hoodie F/C** and **Google Men's Tech Fleece Grey** declined 17.5% (down from $6,660) and 11.1% (down from $4,654) respectively, despite the Hoodie being November’s best seller.
+* **Google Canteen Bottle Black** saw the largest surge, jumping **213.1%** from $1,134 in November to $3,550 in December to enter the top five.
+* Google Zip Hoodie F/C dropped 17.5% from $6,660 (where it was November's #1 item) to $5,496.
+* Super G Unisex Joggers increased 15.2% (+$623) to $4,725, while Google Men's Tech Fleece Grey declined 11.1% (-$515) to $4,139.
+* November's second-biggest seller, Google Badge Heavyweight Pullover Black ($6,091 in November), fell to $2,965 and dropped out of the top five.
 
 ## ambiguous
 
@@ -134,9 +136,9 @@ Compared to November, December’s top five products saw mixed trends: three gre
 
 **Check by eye:** Should ask what to compare (products, channels, days, ...) instead of picking one silently.
 
-Could you clarify what you would like to see the top performers for?
+Could you clarify what you would like to evaluate performance for? For example:
 
-1. **Products** (by revenue or units sold)
-2. **Traffic channels** (by first-touch revenue or sessions)
-3. **Countries / regions** (by revenue)
-4. **Time periods** (best days or months)
+1. **Top products or categories** (by revenue or units sold)
+2. **Traffic acquisition channels** (by revenue, sessions, or conversion rate)
+3. **Devices or countries** (by revenue or average order value)
+4. **Time periods** (best-performing months or days)
