@@ -24,7 +24,7 @@ Time-box: ~8 hours. Correctness and a clear, defensible agent loop matter more t
 |---|---|---|
 | Frontend | React + Vite + TypeScript, hand-written components | Single-page chat with no SSR or SEO needs; Vite is the fastest dev loop |
 | Charts | Recharts | Declarative, React-native, covers our three chart types |
-| Markdown | `react-markdown` | Narrative formatting only **[Mary: confirm utility libs are OK]** |
+| Markdown | Our own ~50-line parser (`lib/markdown.ts`) | Keeps "no UI library" strict; the prompt limits answers to paragraphs, lists and bold |
 | Backend | Python + FastAPI | The author's strongest language, for the live extension |
 | LLM | Gemini via **raw REST over `httpx`** (no `google-genai` SDK) **[Mary]** | Key already available; see §2.1 |
 | Data | BigQuery `google-cloud-bigquery` client | Official client; supports dry runs and byte caps |
@@ -217,25 +217,28 @@ The frontend reads the stream with `fetch` + `ReadableStream` (EventSource doesn
 
 ```text
 frontend/src/
-  App.tsx                 layout, conversation state (useReducer)
+  App.tsx                 layout; wires the reducer to the stream
   components/
-    MessageList.tsx
-    UserMessage.tsx
-    AssistantMessage.tsx  steps → charts → narrative
-    StepList.tsx          collapsible: purpose, SQL, duration, bytes, DataTable
-    Chart.tsx             Recharts bar/line; delegates kpi
-    KpiCard.tsx
+    AssistantMessage.tsx  query steps → narrative → charts → error + Retry
+    QuerySteps.tsx        collapsible: purpose, SQL, duration, bytes, DataTable
     DataTable.tsx
-    Composer.tsx          input + send; disabled while a turn is running
-    ErrorNotice.tsx       message + Retry
+    Chart.tsx             Recharts bar (horizontal for long labels) / line, and the KPI figure
+    ChartBoundary.tsx     a chart that throws is dropped; the message survives
+    Markdown.tsx          renders lib/markdown.ts output
+    Composer.tsx          Enter sends, Shift+Enter newline; disabled while a turn runs
+    EmptyState.tsx        intro + example questions
   lib/
-    api.ts                POST + SSE parsing → typed events
+    api.ts                POST + SSE parsing, connect/idle timeouts → typed events
+    conversation.ts       reducer: messages + compact history (no React inside)
+    markdown.ts           tiny parser: paragraphs, lists, bold, italic, code → data, never HTML
+    format.ts             number/money/bytes/duration formatting
     types.ts              event and message types (mirror §7)
 ```
 
 - States: idle, running (live steps), done, error (retry resends the same question with the same history).
-- If a chart spec doesn't match its data, fall back to the table. Never crash the message.
-- Minimal hand-written CSS. No component libraries.
+- If a chart spec doesn't match its data, the chart is skipped and the table in the query steps still shows the data. A chart never crashes the message.
+- Hand-written CSS, light theme only. No component libraries, no markdown library (the prompt limits the model to paragraphs, lists and bold, so our own ~50-line parser covers it).
+- Unit tests (vitest) for the SSE parser, the reducer and the markdown parser.
 
 ---
 

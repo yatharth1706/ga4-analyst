@@ -7,7 +7,7 @@ Working notes, kept as we go. Condensed to one page at the end.
 - **"Our store" is the Google Merchandise Store**, and relative dates are anchored to the dataset's last day (2021-01-31). The data covers only 2020-11-01 to 2021-01-31.
 - **Revenue = sum of all `purchase` events, without de-duplicating transaction IDs.** About 300 IDs repeat (~$22K in repeated rows) and ~900 purchases have no usable ID. De-duplicating by ID would mean dropping the ID-less purchases, or treating them differently from the rest, so we sum every event and tell the model to mention the caveat when it matters.
 - **Channel questions use `traffic_source.*`, the user's first-touch source.** The session-level `source`/`medium` params cover only about a third of events and are missing on `session_start`. The model states the caveat.
-- **React counts as a framework**, so "no UI library" means no component or chat-UI kits. Chart and markdown libraries are allowed. *(Asked Mary; no answer yet.)*
+- **React counts as a framework**, so "no UI library" means no component or chat-UI kits; every component is hand-written. React calls itself a library, so this is the riskiest reading in the project *(asked Mary; no answer yet)*. To keep a switch cheap, the conversation state (`conversation.ts`) and streaming client (`api.ts`) are plain TypeScript with no React in them. Recharts is used because the task explicitly allows visualization libraries.
 - **Gemini is an acceptable LLM**; it's the key we have. *(Asked Mary.)*
 
 ## Decisions
@@ -22,12 +22,16 @@ Working notes, kept as we go. Condensed to one page at the end.
 - **Synchronous loop, streamed as a generator.** The agent loop is a plain Python generator that yields progress events; FastAPI streams it as server-sent events from a worker thread. No async code, so the loop reads top to bottom. Tool handlers are generators too (`result = yield from toolbox.execute(call)`), so a query can announce "started" before it finishes.
 - **Bad chart specs go back to the model, not to the UI.** `create_chart` checks the spec against the real query result (columns exist, y columns are numeric, row limits) and returns a fixable error message, so the model corrects itself inside the loop.
 - **Iteration cap of 10, then one forced answer** with tool calls disabled, so a confused model can't loop forever.
+- **Our own markdown parser instead of `react-markdown`.** Rendering the answer is UI, so a library there is arguable. The prompt limits answers to paragraphs, lists, bold and italics, so a ~50-line parser covers it. It outputs data, not HTML, so model output can't inject markup.
+- **Frontend state is a pure reducer** fed by server events (`query_started` → `query_result`/`query_error` → `chart` → `answer` → `done`). The browser keeps the compact `done.turn` records as the conversation history it sends back.
+- **Charts render after the narrative**, which leads with the answer; the query steps above them are collapsed by default. Bar charts switch to horizontal when category labels are long (product names).
 
 ## Where we got stuck / surprises
 
 - **Per-product funnel numbers are misleading.** `view_item` events carry ~7 items on average (max 12) and `add_to_cart` ~11, not just the product viewed, and none of them match the page title. Products like "Google F/C Long Sleeve Tee Ash" show 28K views, 9K add-to-carts and 0 purchases. *Resolution:* the notes tell the model that per-product view counts are inflated and conversion rates are only relative, and to say so.
 - **`item_id` doesn't join across event types** (only 5 IDs match between views and purchases); `item_name` does (388 of 396). *Resolution:* the notes say to join on `item_name`.
 - **Obfuscation placeholders are large.** `<Other>` and `(data deleted)` appear in the source or medium of about a third of first-touch revenue. *Resolution:* keep them in totals, flag them in answers, and exclude them when ranking named items.
+- **A dead backend left the chat spinning forever.** With the backend stopped, the dev proxy sometimes never answered the request. *Resolution:* the client aborts if no response arrives within 20s or the stream goes silent for 150s, and shows a Retry button.
 - **First end-to-end answer took 55s.** For "top 5 products" the model ran 4 queries one after another (a placeholder check, a total for context...), and each BigQuery round trip takes ~5–8s including the dry run. *Resolution:* the prompt now asks for the fewest queries that answer the question and to batch independent ones; the same question dropped to 1 query and 22s.
 
 ## Cut / deprioritized

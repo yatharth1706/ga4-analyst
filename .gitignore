@@ -17,3 +17,4 @@ dist/
 # OS / tools
 .DS_Store
 .vercel/
+.claude/
