@@ -1,0 +1,19 @@
+# Secrets
+.env
+*.env.local
+*service-account*.json
+*-sa.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# OS / tools
+.DS_Store
+.vercel/

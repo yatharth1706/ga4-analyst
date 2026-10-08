@@ -1,0 +1,109 @@
+# Golden questions: hand-written reference SQL and the values a correct answer must contain.
+# `turns` are asked in order in one conversation; checks apply to the final answer.
+# `expect` values must appear in the answer or result rows within 1%; `manual` notes are reviewed by eye.
+
+- id: total_users
+  turns: ["How many users visited the store?"]
+  reference_sql: |
+    SELECT COUNT(DISTINCT user_pseudo_id) AS users
+    FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+  expect: [{label: users, value: 270154}]
+
+- id: top_products_revenue
+  turns: ["What were the top 10 products by revenue?"]
+  reference_sql: |
+    SELECT i.item_name, SUM(i.item_revenue_in_usd) AS revenue
+    FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`, UNNEST(items) AS i
+    WHERE event_name = 'purchase'
+    GROUP BY 1 ORDER BY 2 DESC LIMIT 10
+  expect: [{label: "#1 Google Zip Hoodie F/C revenue", value: 13788}]
+
+- id: revenue_over_time
+  turns: ["How did revenue change over time?"]
+  reference_sql: |
+    SELECT SUBSTR(_TABLE_SUFFIX, 1, 6) AS month, SUM(ecommerce.purchase_revenue_in_usd) AS revenue
+    FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+    WHERE event_name = 'purchase'
+    GROUP BY 1 ORDER BY 1
+  expect:
+    - {label: "Nov 2020 revenue", value: 144260}
+    - {label: "Dec 2020 revenue", value: 160555}
+    - {label: "Jan 2021 revenue", value: 57350}
+
+- id: nov_vs_dec
+  turns: ["Compare revenue between November and December."]
+  reference_sql: |
+    SELECT
+      SUM(IF(_TABLE_SUFFIX BETWEEN '20201101' AND '20201130', ecommerce.purchase_revenue_in_usd, 0)) AS nov,
+      SUM(IF(_TABLE_SUFFIX BETWEEN '20201201' AND '20201231', ecommerce.purchase_revenue_in_usd, 0)) AS dec
+    FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+    WHERE event_name = 'purchase' AND _TABLE_SUFFIX BETWEEN '20201101' AND '20201231'
+  expect:
+    - {label: "Nov revenue", value: 144260}
+    - {label: "Dec revenue", value: 160555}
+
+- id: revenue_by_source
+  turns: ["Which traffic source generated the most revenue?"]
+  reference_sql: |
+    SELECT traffic_source.source, traffic_source.medium, SUM(ecommerce.purchase_revenue_in_usd) AS revenue
+    FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+    WHERE event_name = 'purchase'
+    GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 10
+  expect: [{label: "google / organic revenue", value: 95775}]
+  manual: "Must say traffic_source is the user's first-touch source, and flag <Other>/(data deleted)."
+
+- id: revenue_by_device
+  turns: ["How does revenue differ between mobile and desktop users?"]
+  reference_sql: |
+    SELECT device.category, SUM(ecommerce.purchase_revenue_in_usd) AS revenue, COUNT(*) AS purchases
+    FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+    WHERE event_name = 'purchase'
+    GROUP BY 1 ORDER BY 2 DESC
+  expect:
+    - {label: "desktop revenue", value: 208815}
+    - {label: "mobile revenue", value: 146768}
+
+- id: most_purchased_products
+  turns: ["Which products generated the most purchases?"]
+  reference_sql: |
+    SELECT i.item_name, SUM(i.quantity) AS units, COUNT(*) AS purchase_lines
+    FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`, UNNEST(items) AS i
+    WHERE event_name = 'purchase'
+    GROUP BY 1 ORDER BY 2 DESC LIMIT 10
+  expect: [{label: "#1 Google Clear Pen 4-Pack units", value: 444}]
+  manual: "Should state whether 'purchases' means units or orders."
+
+- id: views_vs_purchases
+  turns: ["Which products had high views but relatively low purchase rates?"]
+  reference_sql: |
+    SELECT i.item_name,
+      COUNTIF(event_name = 'view_item') AS views,
+      SUM(IF(event_name = 'purchase', i.quantity, 0)) AS units_purchased,
+      SAFE_DIVIDE(SUM(IF(event_name = 'purchase', i.quantity, 0)), COUNTIF(event_name = 'view_item')) AS units_per_view
+    FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`, UNNEST(items) AS i
+    WHERE event_name IN ('view_item', 'purchase') AND i.item_name NOT IN ('(not set)', '<Other>', '(data deleted)')
+    GROUP BY 1 HAVING views >= 5000 ORDER BY units_per_view LIMIT 10
+  expect: []
+  manual: "Must caveat that view_item events carry several items, so item 'views' are inflated; ranking is relative, not a true conversion rate."
+
+- id: followup_chain
+  turns:
+    - "What were the top 5 products by revenue?"
+    - "What about just December?"
+    - "How does that compare with November?"
+  reference_sql: |
+    SELECT i.item_name,
+      SUM(IF(_TABLE_SUFFIX BETWEEN '20201201' AND '20201231', i.item_revenue_in_usd, 0)) AS dec,
+      SUM(IF(_TABLE_SUFFIX BETWEEN '20201101' AND '20201130', i.item_revenue_in_usd, 0)) AS nov
+    FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`, UNNEST(items) AS i
+    WHERE event_name = 'purchase' AND _TABLE_SUFFIX BETWEEN '20201101' AND '20201231'
+    GROUP BY 1 ORDER BY dec DESC LIMIT 5
+  expect:
+    - {label: "Crewneck Sweatshirt Navy, Dec", value: 5665}
+    - {label: "Crewneck Sweatshirt Navy, Nov", value: 4312}
+
+- id: ambiguous
+  turns: ["What performed best?"]
+  reference_sql: null
+  expect: []
+  manual: "Should ask what to compare (products, channels, days, ...) instead of picking one silently."
