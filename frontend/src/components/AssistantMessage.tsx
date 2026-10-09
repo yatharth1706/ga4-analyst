@@ -1,10 +1,10 @@
-import type { AssistantMessage as Message } from '../lib/types'
+import type { AssistantMessage } from '../lib/types'
 import { Chart } from './Chart'
 import { ChartBoundary } from './ChartBoundary'
 import { Markdown } from './Markdown'
 import { QuerySteps } from './QuerySteps'
 
-type Props = { message: Message; onRetry: () => void }
+type Props = { message: AssistantMessage; onRetry: () => void }
 
 export function AssistantMessage({ message, onRetry }: Props) {
   const resultFor = (queryId: string) => message.steps.find((step) => step.id === queryId)?.result

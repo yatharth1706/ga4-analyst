@@ -17,6 +17,7 @@
 - **A curated dataset guide in the prompt, instead of a "read the schema" tool.** The traps below aren't visible in a schema. Every fact in the guide was checked against the data.
 - **A stateless backend.** The browser sends a compact history (question, answer, SQL, a few preview rows) with each question. That works on serverless hosting, and the client can't forge tool results.
 - **Streaming progress events instead of a spinner.** Answers take 20–45 s, so the user watches each query start and finish.
+- **Four row caps, on purpose.** BigQuery fetches 500 rows for the table and charts (`MAX_ROWS`). The model only sees 100 (`MODEL_MAX_ROWS`) so it aggregates in SQL instead of paging. History keeps 10 preview rows per query (`PREVIEW_ROWS`). Bar charts are rejected above 50 rows (`MAX_BAR_ROWS`).
 - **`gemini-3.8-flash`.** Three models gave identical answers on the test questions; Flash was the fastest.
 
 ## Where I got stuck

@@ -19,7 +19,16 @@ export type ChartSpec = {
   y: string[]
 }
 
-export type Turn = { question: string; answer: string; queries: unknown[] }
+// Compact history the browser sends back. Matches backend QueryRecord / Turn.
+export type QueryRecord = {
+  purpose: string
+  sql: string
+  columns: string[]
+  preview: unknown[][]
+  row_count: number
+}
+
+export type Turn = { question: string; answer: string; queries: QueryRecord[] }
 
 export type ServerEvent =
   | { type: 'query_started'; data: { query_id: string; purpose: string; sql: string } }

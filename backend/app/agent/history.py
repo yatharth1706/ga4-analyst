@@ -18,6 +18,7 @@ MAX_QUERIES_PER_TURN = 10
 MAX_TEXT_CHARS = 10_000
 
 
+# QueryResult (BigQuery rows) → ExecutedQuery (this turn) → QueryRecord (sent back next time).
 class QueryRecord(BaseModel):
     purpose: str = Field(max_length=MAX_TEXT_CHARS)
     sql: str = Field(max_length=MAX_TEXT_CHARS)

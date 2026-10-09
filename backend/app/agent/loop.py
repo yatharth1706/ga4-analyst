@@ -5,8 +5,8 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Protocol
 
-from app.agent import history
 from app.agent.events import Event
+from app.agent.history import Turn, summarize_turn, to_contents
 from app.agent.tools import DECLARATIONS, QueryRunner, Toolbox
 from app.llm import gemini
 from app.llm.gemini import LLMError, Reply
@@ -42,21 +42,21 @@ class Agent:
         self._max_iterations = max_iterations
         self._system_prompt = _load_system_prompt()
 
-    def run(self, question: str, past_turns: list[history.Turn]) -> Iterator[Event]:
-        log.info("question=%r history_turns=%d", question, len(past_turns))
+    def run(self, question: str, history: list[Turn]) -> Iterator[Event]:
+        log.info("question=%r history_turns=%d", question, len(history))
         toolbox = Toolbox(self._runner)
-        contents = history.to_contents(past_turns) + [gemini.user_text(question)]
+        contents = to_contents(history) + [gemini.user_text(question)]
 
         try:
             for _ in range(self._max_iterations):
                 reply = self._llm.generate(self._system_prompt, contents, DECLARATIONS)
                 contents.append(reply.content)
                 if not reply.function_calls:
-                    break  # plain text: this is the answer
+                    break
 
                 results = []
                 for call in reply.function_calls:
-                    result = yield from toolbox.execute(call)  # streams query events as it runs
+                    result = yield from toolbox.execute(call)
                     log.info("tool=%s args=%s error=%s", call.name, call.args, result.get("error"))
                     results.append((call, result))
                 contents.append(gemini.function_responses(results))
@@ -74,5 +74,5 @@ class Agent:
             return
 
         yield Event("answer", {"text": reply.text})
-        turn = history.summarize_turn(question, reply.text, list(toolbox.queries.values()))
+        turn = summarize_turn(question, reply.text, list(toolbox.queries.values()))
         yield Event("done", {"turn": turn.model_dump()})

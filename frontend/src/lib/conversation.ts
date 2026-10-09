@@ -69,6 +69,8 @@ function applyEvent(state: ConversationState, event: ServerEvent): ConversationS
       }
     case 'error':
       return updateLastAnswer(state, (message) => ({ ...message, status: 'error', error: event.data }))
+    default:
+      return state
   }
 }
 

@@ -3,7 +3,7 @@
 from typing import Any
 
 from app.bigquery.client import Column, QueryError, QueryResult
-from app.llm.gemini import FunctionCall, Reply
+from app.llm.gemini import FunctionCall, LLMError, Reply
 
 
 def text_reply(text: str) -> Reply:
@@ -43,7 +43,7 @@ REVENUE_BY_DEVICE = result(
 class FakeLLM:
     """Returns the scripted replies in order and records every request."""
 
-    def __init__(self, *replies: Reply):
+    def __init__(self, *replies: Reply | LLMError):
         self._replies = list(replies)
         self.requests: list[dict[str, Any]] = []
 
