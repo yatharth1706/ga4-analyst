@@ -1,0 +1,81 @@
+ ▐▛███▛█   Claude Code v2.1.280
+▝▜██████▀  Opus 5.5 · Claude Pro
+  ▝▝ ▝▝    ~/Documents/projects/hockeystack-data-analysis
+
+
+❯ /mattpocock-skills:improve-codebase-architecture                              
+
+⏺ Skill(mattpocock-skills:codebase-design)
+  ⎿  Successfully loaded skill
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+⏺ Small codebase (~2.5k lines), so I'll walk it directly rather than spawn an
+  agent.
+
+  Read 1 file, ran 5 shell commands (ctrl+o to expand)
+
+⏺ I've read the full codebase and found five candidates. Writing the report now.
+
+⏺ Write(/var/folders/rp/724nb8xd01xcdgg0wc200bx40000gn/T/architecture-review-202
+       61009-015730.html)
+  ⎿  Wrote 262 lines to ../../../../../var/folders/rp/724nb8xd01xcdgg0wc200
+     bx40000gn/T/architecture-review-20261009-015730.html
+       1 <!doctype html>
+       2 <html lang="en">
+       4 <meta charset="utf-8" />
+       5 <meta name="viewport" content="width=device-width, initial-scale
+         =1" />
+       7 <script src="https://cdn.tailwindcss.com"></script>
+       8 <script type="module">
+       9   import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/d
+      10   mermaid.initialize({ startOnLoad: true, theme: "neutral", secu
+         rityLevel: "loose", flowchart: { curve: "basis" } });
+     … +390 lines (ctrl+o to expand)
+
+  Ran 3 shell commands (ctrl+o to expand)
+
+⏺ I wrote the architecture review and opened it in your browser. It's at
+  /var/folders/rp/724nb8xd01xcdgg0wc200bx40000gn/T/architecture-review-20261009-
+  015730.html, outside the repo. There's no CONTEXT.md, so I took the domain
+  terms from DECISIONS.md and treated its "Decisions" section as the ADRs. None
+  of the candidates conflicts with them.
+
+  Candidates:
+
+  1. Hide Gemini's message format behind the LLM seam (Strong). LLM is a
+     Protocol, but its interface is Gemini's contents/parts dicts. The agent
+     loop, history.py, FakeLLM and seven agent tests all depend on that format;
+     the tests index into ["parts"][0]["functionResponse"] directly. Two
+     adapters already exist (Gemini and the fake), so the seam is real. Only its
+     interface needs to change.
+  2. Test the query runner through its interface (Strong). BigQueryRunner builds
+     its own client, so tests can only reach check_dry_run and the private
+     _to_json_value. Three things in run() have no test:
+     - that the dry-run check happens before the real run;
+     - the byte cap and timeout;
+     - the error cleanup that keeps the request URL and project name out of
+       messages.
+
+     That's where the main SQL-safety decision lives. Passing the client in
+     fixes it, and lets guard.py fold into the runner.
+  3. One module for a turn's queries (Worth exploring). Each executed query is
+     shaped three ways in three files: what the model sees, what the browser
+     gets, and what the next turn remembers. The row caps (MODEL_MAX_ROWS,
+     PREVIEW_ROWS) are scattered across those files, and history.py imports from
+     tools.py.
+  4. Give the event stream its own module (Worth exploring). The event names are
+     string literals at 7 places in the backend, and types.ts mirrors them by
+     hand. If the two sides drift apart, no test fails.
+  5. Attach chart data in the reducer (Speculative). Matching a chart to its
+     query's result happens in AssistantMessage, and Chart.tsx re-checks the
+     columns the backend already validated.
+
+  My top pick is #1, then #2 as a quick follow-up. #1 also makes "swap the model
+  provider" a change to one adapter.
+
+  Which of these would you like to explore?
+
+✻ Worked for 2m 10s · done Friday 1:58 AM
+
+※ recap: I reviewed the codebase's architecture and opened a report with five ways to restructure it. My top pick is hiding Gemini's message format behind the LLM interface. Next step: you choose which one to explore. (disable recaps in /config)

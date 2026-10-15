@@ -1,0 +1,229 @@
+ ▐▛███▛█   Claude Code v2.1.280
+▝▜██████▀  Opus 5.5 · Claude Pro
+  ▝▝ ▝▝    ~/Documents/projects/hockeystack-data-analysis
+
+
+❯ I need you to scope following task, design a spec around it and find 
+  out optimal solutions and things we should do in MVP and things we 
+  should not do
+
+  SPEC:
+
+  HockeyStack: Product Engineer - Technical Task                                
+  Build an agentic data analysis app                                            
+  Use the GA4 web ecommerce demo dataset:                                       
+  https://developers.google.com/analytics/bigquery/web-ecommerce-demo-dataset   
+  Build a standalone application that allows users to ask data analysis         
+  questions through a conversational interface. The application should provide  
+  comprehensive analysis, including relevant visualizations and a written       
+  narrative explaining the findings. The interaction should feel like a normal  
+  chat, including the ability to ask follow-up questions and respond to them in 
+  context.                                                                      
+  Rules                                                                         
+                                                                                
+  - Implement the agentic loop yourself, without a library - no LangChain,      
+  LlamaIndex, or agent frameworks. Raw HTTP or a vendor SDK's messages endpoint 
+  only.                                                                         
+  - Implement the user interface yourself, without a library. Visual polish is  
+  not the primary evaluation criterion; we care more about functionality and    
+  thoughtful implementation.                                                    
+  - You can implement visualizations through visualization libraries.           
+  - You should definitely use AI coding tools, but we will review your code     
+  closely. We expect clean, well-structured, and maintainable code, and you     
+  should be able to explain and defend your implementation decisions. No AI     
+  slope code.                                                                   
+                                                                                
+  Setup: The dataset is public. A free BigQuery account covers this task at $0. 
+  Bring your own LLM API key; expect to spend a few dollars at most.            
+  Time-box: Aim for around 8 hours. We'd rather see a smaller thing done well   
+  than a large thing half-finished. Tell us what you cut.                       
+  Deliverables:                                                                 
+                                                                                
+  - Source code                                                                 
+  - A one-page decision log (no specific format required) covering:             
+    - What you assumed and why                                                  
+    - What you chose to cut or deprioritize                                     
+    - Where you got stuck and what you did about it                             
+    - What you would build or improve with an additional 40 hours               
+  - An optional short Loom video explaining your implementation and key         
+  technical decisions.                                                          
+  - An optional link to a deployed version of the application                   
+
+⏺ I've scoped it below. I haven't written any code yet; there are a few things
+  to settle first.
+
+  What they're really testing
+
+  The rules show where they'll look hardest:
+  1. You write the agent loop by hand, using only the SDK's messages endpoint.
+     They want to see that you understand tool use, stop reasons and error
+     recovery.
+  2. The answers are actually correct. GA4's BigQuery schema is awkward (nested
+     event_params, UNNEST, sharded tables), so getting the SQL right is the real
+     challenge.
+  3. The code is clean and you can defend it. The follow-up call includes a live
+     extension, so you need to know every file well.
+
+  "A smaller thing done well" is the key line. A tight, reliable core will beat
+  lots of features.
+
+  Proposed architecture
+
+  Browser (chat UI) ──SSE──> Server ──> agent loop ──> Claude messages API
+                                           │
+                                           ├─ tool: run_sql      → BigQuery
+                                           └─ tool: create_chart → refers to a 
+  stored result_id
+
+  The agent loop (about 100 lines, the heart of the app):
+  - Call messages.create with the tools. While stop_reason === "tool_use": run
+    the tools, add the tool_result blocks to the conversation, and call again.
+  - Hard limit of about 10 iterations, plus a timeout.
+  - SQL errors go back to the model as is_error: true so it can fix its own
+    query. This is the most "agentic" part and worth showing off.
+  - Stream progress events to the UI ("Running query…", the SQL, the chart, the
+    narrative).
+
+  Tools (keep it to 2):
+  - run_sql(sql, purpose). It only allows SELECT and only against the GA4
+    dataset. A dry run checks how much data the query would scan, and
+    maximumBytesBilled caps the cost. It returns at most about 100 rows to the
+    model and stores the full result under a result_id.
+  - create_chart({result_id, type, x, y, series, title}). The model never types 
+    numbers into a chart. The chart points to a real query result and the server
+    fills in the data. This is a strong design decision: the charts can't show
+    made-up numbers.
+
+  The schema lives in the system prompt rather than behind a tool. There's one
+  table, so a curated schema plus a "gotchas" section works better:
+  - the date range (Nov 2020 to Jan 2021)
+  - how to use _TABLE_SUFFIX
+  - the patterns for UNNEST(event_params)
+  - the obfuscated values like <Other>
+  - where revenue lives
+
+  It's static, so prompt caching makes it cheap.
+
+  Follow-up questions: keep the full message history, including tool calls and
+  results, on the server per conversation. Older tool results get shortened to
+  control context size. Because results are stored by result_id, "now break that
+  down by device" just works.
+
+  Charts: a limited spec (bar, line, pie, table) drawn with Chart.js or ECharts.
+  I'd pick this over raw Vega-Lite because it's easier to validate and to
+  defend.
+
+  Stack
+
+  TypeScript end to end, with these pieces:
+  - Server: Node with Hono or Express, @anthropic-ai/sdk and
+    @google-cloud/bigquery.
+  - Frontend: Vite plus either vanilla TS or React. I'd avoid Next.js because
+    the extra framework behavior is harder to explain on the call.
+  - Not allowed: LangChain or the Vercel AI SDK's tool loop for the agent, and
+    chat-UI kits like assistant-ui or shadcn for the interface.
+  - Model: Claude Sonnet as the default, which balances quality, speed and cost.
+
+  Time plan (about 8 hours)
+
+  ┌───────────────────────────────────────────────────────────────────┬──────┐
+  │                               Block                               │ Time │
+  ├───────────────────────────────────────────────────────────────────┼──────┤
+  │ BigQuery setup, explore the schema, write the schema and gotchas  │ 1h   │
+  │ prompt                                                            │      │
+  ├───────────────────────────────────────────────────────────────────┼──────┤
+  │ Agent loop and tools, tested from a CLI script first with no UI   │ 2h   │
+  ├───────────────────────────────────────────────────────────────────┼──────┤
+  │ Chat UI: streaming, markdown, a collapsible "show SQL" panel,     │ 2h   │
+  │ charts                                                            │      │
+  ├───────────────────────────────────────────────────────────────────┼──────┤
+  │ Follow-ups, error recovery, ambiguous questions (the agent asks   │ 1h   │
+  │ to clarify)                                                       │      │
+  ├───────────────────────────────────────────────────────────────────┼──────┤
+  │ A small eval set of about 10 questions with known answers, plus   │ 1h   │
+  │ prompt tuning                                                     │      │
+  ├───────────────────────────────────────────────────────────────────┼──────┤
+  │ README, decision log, cleanup, optional deploy                    │ 1h   │
+  └───────────────────────────────────────────────────────────────────┴──────┘
+
+  The eval set is cheap to build and shows good judgment. Few candidates will
+  have one.
+
+  What to cut (and list in the decision log)
+
+  - Auth and user accounts
+  - A conversation database: in-memory storage only, or SQLite if there's time
+  - Dashboards or saved reports
+  - CSV export
+  - Multiple datasets
+  - Mobile polish
+
+  What I need from you
+
+  1. Language preference. The live extension means you need to be comfortable in
+     the code. Is TypeScript fine, or would you rather use Python (FastAPI)?
+  2. A GCP project with the BigQuery sandbox enabled (free, no card needed), and
+     either gcloud auth application-default login or a service-account JSON
+     key.
+  3. An Anthropic API key, kept in .env and never committed.
+
+  Once you answer #1 and have #2 and #3 ready, I'll start with the BigQuery
+  exploration and the CLI-tested agent loop. That's the riskiest part, so it's
+  best to prove it first.
+
+❯ i guess lets use fastapi i am comfortable with that.                          
+                                                                                
+  i havent used gcp but i dont know which option is best to save time tell that 
+  i dont have anthropic key but i have gemini key will that work ?                   
+                                                                                
+⏺ 1. GCP: the fastest option
+
+  Use your personal Google login (Application Default Credentials). There are no
+  key files to manage and it takes about 10 minutes:
+
+  1. Go to console.cloud.google.com and sign in with your Gmail.
+  2. Create a new project, e.g. hockeystack-ga4, and note the project ID.
+  3. Open BigQuery in that project. It runs in sandbox mode with no credit card.
+     The sandbox gives you 1 TB of queries per month free, which is far more
+     than this task needs.
+  4. Install the gcloud CLI and log in:
+
+  brew install --cask google-cloud-sdk
+
+  gcloud auth application-default login
+
+  gcloud auth application-default set-quota-project YOUR_PROJECT_ID
+
+  After that, the Python BigQuery client picks up your credentials
+  automatically. You only need a service account key if you deploy later, since
+  a server can't use your personal login. That's a 5-minute job and we can do it
+  at the end.
+
+  2. Gemini key: yes, it works
+
+  The rule is "Raw HTTP or a vendor SDK's messages endpoint." With Gemini,
+  that's generate_content with function calling in the google-genai SDK. "Bring
+  your own LLM API key" means they don't mind which provider you use. Gemini
+  also fits well here because it's the same ecosystem as GA4 and BigQuery.
+
+  Two things to watch so we stay within the rules:
+  - Turn off automatic function calling. If you pass plain Python functions to
+    google-genai as tools, the SDK runs the tool loop itself. That would break
+    the "implement the loop yourself" rule, and a reviewer would spot it. We'll
+    pass only the function declarations and write the loop ourselves: read the
+    function_call parts, run the tool, send back function_response, repeat.
+  - Keep the model's turns exactly as returned in the history. Newer Gemini
+    models attach "thought signatures" to function calls, and multi-turn tool
+    use breaks if you rebuild those turns by hand. This is a nice detail to
+    mention on the call.
+
+  Check the current Pro/Flash model names in AI Studio before we start. I'd
+  develop on Flash because it's cheap and fast, and compare against Pro if
+  answers are weak. The free tier has rate limits, so attach billing to the key
+  if you start hitting 429 errors.
+
+  Next steps
+
+  Once GCP is set up and you have the Gemini key in .env, I'll start by
+  exploring the schema and building the agent loop as a CLI test script first.
+  That proves the hard part works before we build the UI.
